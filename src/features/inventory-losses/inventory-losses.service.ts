@@ -491,21 +491,11 @@ export class InventoryLossesService {
     }
 
     if (filters.startDate) {
-      conditions.push(
-        gte(
-          inventoryLosses.lossDate,
-          Math.floor(filters.startDate.getTime() / 1000),
-        ),
-      );
+      conditions.push(gte(inventoryLosses.lossDate, filters.startDate));
     }
 
     if (filters.endDate) {
-      conditions.push(
-        lte(
-          inventoryLosses.lossDate,
-          Math.floor(filters.endDate.getTime() / 1000),
-        ),
-      );
+      conditions.push(lte(inventoryLosses.lossDate, filters.endDate));
     }
 
     if (filters.minValue !== undefined) {
@@ -540,9 +530,6 @@ export class InventoryLossesService {
   ): Promise<any> {
     const db = getTenantDb(tenantId);
 
-    const startTimestamp = Math.floor(startDate.getTime() / 1000);
-    const endTimestamp = Math.floor(endDate.getTime() / 1000);
-
     // Get approved losses in date range
     const losses = await db
       .select()
@@ -551,8 +538,8 @@ export class InventoryLossesService {
         and(
           eq(inventoryLosses.branchId, branchId),
           eq(inventoryLosses.status, "approved"),
-          gte(inventoryLosses.lossDate, startTimestamp),
-          lte(inventoryLosses.lossDate, endTimestamp),
+          gte(inventoryLosses.lossDate, startDate),
+          lte(inventoryLosses.lossDate, endDate),
         ),
       );
 
@@ -595,8 +582,8 @@ export class InventoryLossesService {
         and(
           eq(inventoryLosses.branchId, branchId),
           eq(inventoryLosses.status, "approved"),
-          gte(inventoryLosses.lossDate, startTimestamp),
-          lte(inventoryLosses.lossDate, endTimestamp),
+          gte(inventoryLosses.lossDate, startDate),
+          lte(inventoryLosses.lossDate, endDate),
         ),
       )
       .groupBy(inventoryLossItems.productId, products.name, products.sku)

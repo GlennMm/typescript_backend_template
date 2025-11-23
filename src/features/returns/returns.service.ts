@@ -798,15 +798,11 @@ export class ReturnsService {
     }
 
     if (filters.startDate) {
-      conditions.push(
-        gte(returns.returnDate, Math.floor(filters.startDate.getTime() / 1000)),
-      );
+      conditions.push(gte(returns.returnDate, filters.startDate));
     }
 
     if (filters.endDate) {
-      conditions.push(
-        lte(returns.returnDate, Math.floor(filters.endDate.getTime() / 1000)),
-      );
+      conditions.push(lte(returns.returnDate, filters.endDate));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -833,9 +829,6 @@ export class ReturnsService {
   ): Promise<any> {
     const db = getTenantDb(tenantId);
 
-    const startTimestamp = Math.floor(startDate.getTime() / 1000);
-    const endTimestamp = Math.floor(endDate.getTime() / 1000);
-
     // Get processed returns in date range
     const returnRecords = await db
       .select()
@@ -844,8 +837,8 @@ export class ReturnsService {
         and(
           eq(returns.branchId, branchId),
           eq(returns.status, "processed"),
-          gte(returns.returnDate, startTimestamp),
-          lte(returns.returnDate, endTimestamp),
+          gte(returns.returnDate, startDate),
+          lte(returns.returnDate, endDate),
         ),
       );
 
