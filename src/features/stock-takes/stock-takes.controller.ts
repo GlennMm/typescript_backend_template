@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../../types";
-import { errorResponse, successResponse } from "../../utils/responses";
+import { errorResponse, successResponse } from "../../utils/response";
 import { StockTakesService } from "./stock-takes.service";
 
 export class StockTakesController {
@@ -12,8 +12,8 @@ export class StockTakesController {
 
   createStockTake = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user?.userId!;
       const stockTake = await this.service.createStockTake(
         tenantId,
         req.body,
@@ -27,7 +27,7 @@ export class StockTakesController {
 
   getAllStockTakes = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { branchId } = req.query;
       const stockTakes = await this.service.getAllStockTakes(
         tenantId,
@@ -41,7 +41,7 @@ export class StockTakesController {
 
   getStockTakeById = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const stockTake = await this.service.getStockTakeById(tenantId, id);
       return successResponse(res, stockTake);
@@ -52,8 +52,8 @@ export class StockTakesController {
 
   startStockTake = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const { id } = req.params;
       const stockTake = await this.service.startStockTake(tenantId, id, userId);
       return successResponse(res, stockTake);
@@ -64,8 +64,8 @@ export class StockTakesController {
 
   updateStockTakeItem = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const { id, itemId } = req.params;
       const item = await this.service.updateStockTakeItem(
         tenantId,
@@ -82,8 +82,8 @@ export class StockTakesController {
 
   completeCount = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const { id } = req.params;
       const stockTake = await this.service.completeCount(tenantId, id, userId);
       return successResponse(res, stockTake);
@@ -94,8 +94,8 @@ export class StockTakesController {
 
   approveStockTake = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const { id } = req.params;
       const stockTake = await this.service.approveStockTake(
         tenantId,
@@ -111,8 +111,8 @@ export class StockTakesController {
 
   rejectStockTake = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const { id } = req.params;
       const stockTake = await this.service.rejectStockTake(
         tenantId,
@@ -128,8 +128,8 @@ export class StockTakesController {
 
   recountStockTake = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const { id } = req.params;
       const stockTake = await this.service.recountStockTake(
         tenantId,
@@ -144,7 +144,7 @@ export class StockTakesController {
 
   getActiveStockTake = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { branchId } = req.params;
       const stockTake = await this.service.getActiveStockTake(
         tenantId,

@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../../types";
-import { errorResponse, successResponse } from "../../utils/responses";
+import { errorResponse, successResponse } from "../../utils/response";
 import { PurchasesService } from "./purchases.service";
 
 export class PurchasesController {
@@ -12,8 +12,8 @@ export class PurchasesController {
 
   createPurchase = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const purchase = await this.service.createPurchase(
         tenantId,
         req.body,
@@ -27,7 +27,7 @@ export class PurchasesController {
 
   getAllPurchases = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { branchId, supplierId, status } = req.query;
       const purchases = await this.service.getAllPurchases(tenantId, {
         branchId: branchId as string | undefined,
@@ -42,7 +42,7 @@ export class PurchasesController {
 
   getPurchaseById = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const purchase = await this.service.getPurchaseById(tenantId, id);
       return successResponse(res, purchase);
@@ -53,7 +53,7 @@ export class PurchasesController {
 
   updatePurchase = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const purchase = await this.service.updatePurchase(
         tenantId,
@@ -68,7 +68,7 @@ export class PurchasesController {
 
   submitPurchase = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const purchase = await this.service.submitPurchase(tenantId, id);
       return successResponse(res, purchase);
@@ -79,7 +79,7 @@ export class PurchasesController {
 
   cancelPurchase = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       await this.service.cancelPurchase(tenantId, id);
       return successResponse(res, { message: "Purchase cancelled successfully" });
@@ -90,8 +90,8 @@ export class PurchasesController {
 
   addPayment = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const { id } = req.params;
       const payment = await this.service.addPayment(
         tenantId,
@@ -107,7 +107,7 @@ export class PurchasesController {
 
   deletePayment = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { paymentId } = req.params;
       await this.service.deletePayment(tenantId, paymentId);
       return successResponse(res, { message: "Payment deleted successfully" });
@@ -118,8 +118,8 @@ export class PurchasesController {
 
   receiveGoods = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
-      const userId = req.user!.id;
+      const tenantId = req.tenant?.tenantId!;
+      const userId = req.user!.userId;
       const { id } = req.params;
       await this.service.receiveGoods(tenantId, id, req.body, userId);
       return successResponse(res, { message: "Goods received successfully" });
@@ -130,7 +130,7 @@ export class PurchasesController {
 
   getProductPurchaseHistory = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { productId } = req.params;
       const history = await this.service.getProductPurchaseHistory(
         tenantId,
@@ -144,7 +144,7 @@ export class PurchasesController {
 
   getUnpaidPurchases = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const purchases = await this.service.getUnpaidPurchases(tenantId);
       return successResponse(res, purchases);
     } catch (error: any) {
