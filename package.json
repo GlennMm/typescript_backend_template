@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
-    "db:generate:main": "drizzle-kit generate:sqlite --config=drizzle.config.ts",
-    "db:generate:tenant": "drizzle-kit generate:sqlite --config=drizzle.tenant.config.ts",
+    "db:generate:main": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:generate:tenant": "drizzle-kit generate --config=drizzle.tenant.config.ts",
     "db:generate": "bun run db:generate:main && bun run db:generate:tenant",
     "db:migrate": "bun src/db/migrate.ts",
     "db:seed": "bun src/db/seed.ts",

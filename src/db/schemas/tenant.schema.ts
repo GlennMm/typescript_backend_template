@@ -211,6 +211,10 @@ export const productCategories = sqliteTable("product_categories", {
   parentId: text("parent_id").references((): any => productCategories.id, {
     onDelete: "set null",
   }),
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  detail: text("detail"),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
@@ -308,6 +312,119 @@ export const customers = sqliteTable("customers", {
     .notNull()
     .default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Currencies - Tenant-wide currency management
+export const currencies = sqliteTable("currencies", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(), // USD, EUR, GBP, etc.
+  symbol: text("symbol").notNull(), // $, €, £, etc.
+  exchangeRate: real("exchange_rate").notNull().default(1), // Relative to base currency
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false), // Only ONE can be default
+  detail: text("detail"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Payment Methods - Tenant-wide payment method templates
+export const paymentMethods = sqliteTable("payment_methods", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(), // Cash, Credit Card, Mobile Money, etc.
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false), // Multiple can be default
+  detail: text("detail"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Branch Payment Methods - Branch-specific payment methods (visible only to that branch)
+export const branchPaymentMethods = sqliteTable("branch_payment_methods", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Link to tenant-wide payment method (nullable for branch-created methods)
+  paymentMethodId: text("payment_method_id").references(
+    () => paymentMethods.id,
+    { onDelete: "cascade" },
+  ),
+
+  // Branch-specific name (used when paymentMethodId is null)
+  name: text("name"),
+  detail: text("detail"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Suppliers - Tenant-wide supplier records
+export const suppliers = sqliteTable("suppliers", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
+  vatNumber: text("vat_number"),
+  tinNumber: text("tin_number"),
+  contactPerson: text("contact_person"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Taxes - Tenant-wide tax definitions (branches inherit, cannot modify)
+export const taxes = sqliteTable("taxes", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(), // VAT, Sales Tax, etc.
+  taxRate: real("tax_rate").notNull(), // e.g., 15.0 for 15%
+  taxCode: text("tax_code"), // e.g., VAT001
+  taxID: text("tax_id"), // External tax identifier
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Product Branch Taxes - Which taxes apply to which products at which branches
+export const productBranchTaxes = sqliteTable("product_branch_taxes", {
+  id: text("id").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  taxId: text("tax_id")
+    .notNull()
+    .references(() => taxes.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
 });

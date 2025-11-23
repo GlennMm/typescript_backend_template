@@ -3,10 +3,14 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import authRoutes from "./features/auth/auth.routes";
 import branchesRoutes from "./features/branches/branches.routes";
+import currenciesRoutes from "./features/currencies/currencies.routes";
 import customersRoutes from "./features/customers/customers.routes";
 import inventoryRoutes from "./features/inventory/inventory.routes";
+import paymentMethodsRoutes from "./features/payment-methods/payment-methods.routes";
 import productsRoutes from "./features/products/products.routes";
 import shopSettingsRoutes from "./features/shop-settings/shop-settings.routes";
+import suppliersRoutes from "./features/suppliers/suppliers.routes";
+import taxesRoutes from "./features/taxes/taxes.routes";
 import tenantsRoutes from "./features/tenants/tenants.routes";
 import usersRoutes from "./features/users/users.routes";
 import { errorHandler } from "./middleware/errorHandler";
@@ -69,6 +73,10 @@ app.use("/api/branches", branchesRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/customers", customersRoutes);
+app.use("/api/currencies", currenciesRoutes);
+app.use("/api/payment-methods", paymentMethodsRoutes);
+app.use("/api/suppliers", suppliersRoutes);
+app.use("/api/taxes", taxesRoutes);
 
 // 404 handler
 app.use((_req, res) => {
