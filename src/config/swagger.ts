@@ -870,6 +870,28 @@ const options: OAS3Options = {
             updatedAt: { type: "string", format: "date-time" },
           },
         },
+        AuditLog: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            tableName: { type: "string", example: "products" },
+            recordId: { type: "string" },
+            action: {
+              type: "string",
+              enum: ["INSERT", "UPDATE", "DELETE"],
+              example: "UPDATE"
+            },
+            oldValues: { type: "object" },
+            newValues: { type: "object" },
+            userId: { type: "string" },
+            timestamp: { type: "string", format: "date-time" },
+            ipAddress: { type: "string", example: "192.168.1.1" },
+            userAgent: { type: "string" },
+            isArchived: { type: "boolean", example: false },
+            archivedAt: { type: "string", format: "date-time" },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
       },
     },
     security: [
@@ -993,6 +1015,10 @@ const options: OAS3Options = {
       {
         name: "Reorder Suggestions",
         description: "Automatic reorder alerts when stock reaches minimum level with dismiss, snooze, and purchase order creation",
+      },
+      {
+        name: "Audit Logs",
+        description: "Comprehensive audit trail tracking all database changes with search, export, and archiving capabilities",
       },
     ],
   },

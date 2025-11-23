@@ -1737,4 +1737,42 @@ export const reorderSuggestions = sqliteTable("reorder_suggestions", {
     .default(sql`(unixepoch())`),
 });
 
+// Audit Logs - Comprehensive audit trail for all database changes
+export const auditLogs = sqliteTable("audit_logs", {
+  id: text("id").primaryKey(),
+
+  // What was changed
+  tableName: text("table_name").notNull(), // Name of the table
+  recordId: text("record_id").notNull(), // ID of the record
+  action: text("action", {
+    enum: ["INSERT", "UPDATE", "DELETE"],
+  }).notNull(),
+
+  // Change details (stored as JSON)
+  oldValues: text("old_values", { mode: "json" }), // null for INSERT
+  newValues: text("new_values", { mode: "json" }), // null for DELETE
+
+  // Who made the change
+  userId: text("user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+
+  // When and where
+  timestamp: integer("timestamp", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  ipAddress: text("ip_address"), // Client IP address
+  userAgent: text("user_agent"), // Browser/client info
+
+  // Archiving
+  isArchived: integer("is_archived", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  archivedAt: integer("archived_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 
