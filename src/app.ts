@@ -56,7 +56,8 @@ const frontendDistPath = path.join(__dirname, "..", "frontend", "dist");
 app.use(express.static(frontendDistPath));
 
 // Handle React routing, return all requests to React app (except API routes)
-app.get("*", (_req, res) => {
+// Using middleware instead of app.get("*") for Express 5 compatibility
+app.use((_req, res) => {
   res.sendFile(path.join(frontendDistPath, "index.html"));
 });
 
