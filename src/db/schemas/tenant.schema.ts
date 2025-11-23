@@ -1043,6 +1043,9 @@ export const payments = sqliteTable("payments", {
   laybyId: text("layby_id").references(() => laybys.id, {
     onDelete: "cascade",
   }),
+  shiftId: text("shift_id").references((): any => shifts.id, {
+    onDelete: "set null",
+  }), // Track which shift processed this payment
 
   // Payment details
   amount: real("amount").notNull(),
@@ -1068,6 +1071,191 @@ export const payments = sqliteTable("payments", {
   createdBy: text("created_by")
     .notNull()
     .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Tills - Register tills per branch
+export const tills = sqliteTable("tills", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  tillNumber: text("till_number").notNull(), // e.g., "TILL-001"
+  name: text("name").notNull(), // e.g., "Cashier Station 1"
+
+  // Device registration
+  deviceId: text("device_id"), // Unique device identifier
+  deviceName: text("device_name"), // Device friendly name
+
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Shifts - Cashier shifts per till
+export const shifts = sqliteTable("shifts", {
+  id: text("id").primaryKey(),
+  tillId: text("till_id")
+    .notNull()
+    .references(() => tills.id, { onDelete: "cascade" }),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  cashierId: text("cashier_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+
+  // Cash balances
+  openingBalance: real("opening_balance").notNull().default(0),
+  closingBalance: real("closing_balance"), // Entered by cashier
+  expectedCash: real("expected_cash"), // Calculated: opening + cash sales + cash in - cash out - deposits
+  actualCash: real("actual_cash"), // Same as closingBalance
+  variance: real("variance"), // actualCash - expectedCash
+
+  // Status
+  status: text("status", { enum: ["open", "closed"] })
+    .notNull()
+    .default("open"),
+
+  // Timestamps
+  openedAt: integer("opened_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  closedAt: integer("closed_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Cash Movements - Track cash in/out during shifts
+export const cashMovements = sqliteTable("cash_movements", {
+  id: text("id").primaryKey(),
+  shiftId: text("shift_id")
+    .notNull()
+    .references(() => shifts.id, { onDelete: "cascade" }),
+
+  // Movement type
+  type: text("type", {
+    enum: ["cash_in", "cash_out", "bank_deposit", "petty_cash"],
+  }).notNull(),
+
+  // Amount
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+
+  // Details
+  reason: text("reason").notNull(), // Brief description
+  notes: text("notes"),
+
+  // Approval (required for cash movements)
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Day Ends - Day end records per branch per day
+export const dayEnds = sqliteTable("day_ends", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Date (business date, not timestamp)
+  businessDate: integer("business_date", { mode: "timestamp" }).notNull(), // Date only (start of day)
+
+  // Totals summary
+  totalSales: real("total_sales").notNull().default(0), // Sum of all sales
+  totalCash: real("total_cash").notNull().default(0), // Sum of cash payments
+  totalVariance: real("total_variance").notNull().default(0), // Sum of all shift variances
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "reviewed", "approved", "reopened"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Edit window (24 hours from approval)
+  closedAt: integer("closed_at", { mode: "timestamp" }),
+  canEditUntil: integer("can_edit_until", { mode: "timestamp" }), // closedAt + 24 hours
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  reviewedBy: text("reviewed_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Day End Shifts - Links day ends to shifts (many-to-many)
+export const dayEndShifts = sqliteTable("day_end_shifts", {
+  id: text("id").primaryKey(),
+  dayEndId: text("day_end_id")
+    .notNull()
+    .references(() => dayEnds.id, { onDelete: "cascade" }),
+  shiftId: text("shift_id")
+    .notNull()
+    .references(() => shifts.id, { onDelete: "cascade" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Day End Payments - Payment method reconciliation
+export const dayEndPayments = sqliteTable("day_end_payments", {
+  id: text("id").primaryKey(),
+  dayEndId: text("day_end_id")
+    .notNull()
+    .references(() => dayEnds.id, { onDelete: "cascade" }),
+
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+
+  // Expected vs actual
+  expectedAmount: real("expected_amount").notNull(), // From system
+  actualAmount: real("actual_amount").notNull(), // Counted/verified
+  variance: real("variance").notNull(), // actualAmount - expectedAmount
+
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
