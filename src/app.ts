@@ -1,4 +1,6 @@
 import express from "express";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 import authRoutes from "./features/auth/auth.routes";
 import branchesRoutes from "./features/branches/branches.routes";
 import customersRoutes from "./features/customers/customers.routes";
@@ -44,6 +46,18 @@ app.get("/health", (_req, res) => {
       timestamp: new Date().toISOString(),
     },
   });
+});
+
+// API Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "POS API Documentation",
+}));
+
+// Swagger JSON endpoint
+app.get("/api-docs.json", (_req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
 });
 
 // API routes
