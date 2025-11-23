@@ -1439,4 +1439,88 @@ export const expensePayments = sqliteTable("expense_payments", {
     .default(sql`(unixepoch())`),
 });
 
+// Inventory Losses - Track inventory losses and adjustments
+export const inventoryLosses = sqliteTable("inventory_losses", {
+  id: text("id").primaryKey(),
+  lossNumber: text("loss_number").notNull().unique(), // LOSS2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Loss type
+  lossType: text("loss_type", {
+    enum: ["theft", "breakage", "expired", "shrinkage", "other"],
+  }).notNull(),
+
+  // Details
+  reason: text("reason").notNull(), // Required description
+  referenceNumber: text("reference_number"), // Optional external reference
+
+  // Financial impact
+  totalValue: real("total_value").notNull().default(0), // Sum of line items (cost * quantity)
+
+  // Link to expense category (optional)
+  expenseCategoryId: text("expense_category_id").references(
+    () => expenseCategories.id,
+    { onDelete: "set null" },
+  ),
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "approved"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Date
+  lossDate: integer("loss_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit trail
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Inventory Loss Items - Line items for inventory losses
+export const inventoryLossItems = sqliteTable("inventory_loss_items", {
+  id: text("id").primaryKey(),
+  lossId: text("loss_id")
+    .notNull()
+    .references(() => inventoryLosses.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+
+  // Quantity & cost
+  quantity: real("quantity").notNull(),
+  costPrice: real("cost_price").notNull(), // Snapshot at time of loss
+  lineTotal: real("line_total").notNull(), // quantity * costPrice
+
+  // Notes
+  notes: text("notes"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 

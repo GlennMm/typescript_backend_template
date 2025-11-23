@@ -5,6 +5,7 @@ import m0002 from './0002_nebulous_nitro.sql';
 import m0003 from './0003_wealthy_metal_master.sql';
 import m0004 from './0004_heavy_mongu.sql';
 import m0005 from './0005_spotty_thena.sql';
+import m0006 from './0006_gray_micromax.sql';
 
   export default {
     journal,
@@ -14,7 +15,8 @@ m0001,
 m0002,
 m0003,
 m0004,
-m0005
+m0005,
+m0006
     }
   }
   

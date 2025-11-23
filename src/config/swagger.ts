@@ -725,6 +725,51 @@ const options: OAS3Options = {
             isOverBudget: { type: "boolean", example: false },
           },
         },
+        InventoryLoss: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            lossNumber: { type: "string", example: "LOSS2025-00001" },
+            branchId: { type: "string" },
+            lossType: {
+              type: "string",
+              enum: ["theft", "breakage", "expired", "shrinkage", "other"],
+              example: "breakage"
+            },
+            reason: { type: "string", example: "Damaged during stock take" },
+            referenceNumber: { type: "string", example: "REF-12345" },
+            totalValue: { type: "number", example: 250.50 },
+            expenseCategoryId: { type: "string" },
+            status: {
+              type: "string",
+              enum: ["draft", "approved"],
+              example: "draft"
+            },
+            lossDate: { type: "string", format: "date-time" },
+            notes: { type: "string" },
+            createdBy: { type: "string" },
+            approvedBy: { type: "string" },
+            approvedAt: { type: "string", format: "date-time" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
+        InventoryLossItem: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            lossId: { type: "string" },
+            productId: { type: "string" },
+            productName: { type: "string" },
+            productSku: { type: "string" },
+            quantity: { type: "number", example: 5 },
+            costPrice: { type: "number", example: 50.10 },
+            lineTotal: { type: "number", example: 250.50 },
+            notes: { type: "string" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
       },
     },
     security: [
@@ -836,6 +881,10 @@ const options: OAS3Options = {
       {
         name: "Expenses",
         description: "Expense management with approval workflow, recurring expenses, and multi-currency payments",
+      },
+      {
+        name: "Inventory Losses",
+        description: "Track inventory losses and adjustments including theft, breakage, expiry, and shrinkage with stock deduction on approval",
       },
     ],
   },
