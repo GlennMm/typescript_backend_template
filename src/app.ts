@@ -1,4 +1,6 @@
 import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import authRoutes from "./features/auth/auth.routes";
 import tenantsRoutes from "./features/tenants/tenants.routes";
 import usersRoutes from "./features/users/users.routes";
@@ -9,6 +11,9 @@ import {
   rateLimiter,
 } from "./middleware/security";
 import logger from "./utils/logger";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -46,15 +51,13 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/tenants", tenantsRoutes);
 
-// 404 handler
-app.use((_req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      message: "Route not found",
-      code: "NOT_FOUND",
-    },
-  });
+// Serve static files from the React app
+const frontendDistPath = path.join(__dirname, "..", "frontend", "dist");
+app.use(express.static(frontendDistPath));
+
+// Handle React routing, return all requests to React app (except API routes)
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(frontendDistPath, "index.html"));
 });
 
 // Error handler (must be last)

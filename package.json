@@ -7,6 +7,11 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
+    "frontend:install": "cd frontend && bun install",
+    "frontend:dev": "cd frontend && bun run dev",
+    "frontend:build": "cd frontend && bun run build",
+    "frontend:test": "cd frontend && bun run test",
+    "build": "bun run frontend:build",
     "db:generate:main": "drizzle-kit generate:sqlite --config=drizzle.config.ts",
     "db:generate:tenant": "drizzle-kit generate:sqlite --config=drizzle.tenant.config.ts",
     "db:generate": "bun run db:generate:main && bun run db:generate:tenant",
