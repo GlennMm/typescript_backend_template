@@ -165,15 +165,11 @@ export class AuditLogsService {
     }
 
     if (filters.startDate) {
-      conditions.push(
-        gte(auditLogs.timestamp, Math.floor(filters.startDate.getTime() / 1000)),
-      );
+      conditions.push(gte(auditLogs.timestamp, filters.startDate));
     }
 
     if (filters.endDate) {
-      conditions.push(
-        lte(auditLogs.timestamp, Math.floor(filters.endDate.getTime() / 1000)),
-      );
+      conditions.push(lte(auditLogs.timestamp, filters.endDate));
     }
 
     // By default, don't include archived logs unless explicitly requested
@@ -254,7 +250,7 @@ export class AuditLogsService {
       })
       .where(
         and(
-          lte(auditLogs.timestamp, Math.floor(beforeDate.getTime() / 1000)),
+          lte(auditLogs.timestamp, beforeDate),
           eq(auditLogs.isArchived, false),
         ),
       );
@@ -312,15 +308,11 @@ export class AuditLogsService {
     const conditions = [eq(auditLogs.isArchived, false)];
 
     if (startDate) {
-      conditions.push(
-        gte(auditLogs.timestamp, Math.floor(startDate.getTime() / 1000)),
-      );
+      conditions.push(gte(auditLogs.timestamp, startDate));
     }
 
     if (endDate) {
-      conditions.push(
-        lte(auditLogs.timestamp, Math.floor(endDate.getTime() / 1000)),
-      );
+      conditions.push(lte(auditLogs.timestamp, endDate));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
