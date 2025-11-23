@@ -51,4 +51,30 @@ router.patch(
   branchesController.toggleInheritance,
 );
 
+// Staff Management Routes
+
+// Get branch staff (all authenticated users can view)
+router.get("/:id/staff", branchesController.getBranchStaff);
+
+// Assign staff to branch (ShopOwner, TenantAdmin, BranchManager)
+router.post(
+  "/:id/staff",
+  authorize("ShopOwner", "TenantAdmin", "BranchManager"),
+  branchesController.assignStaffToBranch,
+);
+
+// Remove staff from branch (ShopOwner, TenantAdmin, BranchManager)
+router.delete(
+  "/:id/staff/:userId",
+  authorize("ShopOwner", "TenantAdmin", "BranchManager"),
+  branchesController.removeStaffFromBranch,
+);
+
+// Transfer staff between branches (ShopOwner, TenantAdmin only)
+router.post(
+  "/staff/transfer",
+  authorize("ShopOwner", "TenantAdmin"),
+  branchesController.transferStaff,
+);
+
 export default router;

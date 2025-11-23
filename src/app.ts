@@ -1,6 +1,9 @@
 import express from "express";
 import authRoutes from "./features/auth/auth.routes";
 import branchesRoutes from "./features/branches/branches.routes";
+import customersRoutes from "./features/customers/customers.routes";
+import inventoryRoutes from "./features/inventory/inventory.routes";
+import productsRoutes from "./features/products/products.routes";
 import shopSettingsRoutes from "./features/shop-settings/shop-settings.routes";
 import tenantsRoutes from "./features/tenants/tenants.routes";
 import usersRoutes from "./features/users/users.routes";
@@ -49,6 +52,9 @@ app.use("/api/users", usersRoutes);
 app.use("/api/tenants", tenantsRoutes);
 app.use("/api/shop/settings", shopSettingsRoutes);
 app.use("/api/branches", branchesRoutes);
+app.use("/api/products", productsRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/customers", customersRoutes);
 
 // 404 handler
 app.use((_req, res) => {

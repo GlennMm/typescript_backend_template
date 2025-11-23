@@ -306,4 +306,241 @@ export class BranchesService {
 
     return updatedBranch;
   }
+
+  // Staff Management Methods
+
+  async getBranchStaff(tenantId: string, branchId: string) {
+    const db = getTenantDb(tenantId);
+    const { users, staffAssignments } = await import(
+      "../../db/schemas/tenant.schema"
+    );
+
+    // Verify branch exists
+    const [branch] = await db
+      .select()
+      .from(branches)
+      .where(eq(branches.id, branchId))
+      .limit(1);
+
+    if (!branch) {
+      throw new Error("Branch not found");
+    }
+
+    // Get all staff assigned to this branch
+    const staff = await db
+      .select({
+        assignmentId: staffAssignments.id,
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        roleAtBranch: staffAssignments.roleAtBranch,
+        assignedAt: staffAssignments.assignedAt,
+        assignedBy: staffAssignments.assignedBy,
+      })
+      .from(staffAssignments)
+      .innerJoin(users, eq(staffAssignments.userId, users.id))
+      .where(eq(staffAssignments.branchId, branchId));
+
+    return staff;
+  }
+
+  async assignStaffToBranch(
+    tenantId: string,
+    branchId: string,
+    userId: string,
+    roleAtBranch: "BranchManager" | "Supervisor" | "Cashier" | null,
+    assignedBy: string,
+  ) {
+    const db = getTenantDb(tenantId);
+    const { users, staffAssignments } = await import(
+      "../../db/schemas/tenant.schema"
+    );
+
+    // Verify branch exists
+    const [branch] = await db
+      .select()
+      .from(branches)
+      .where(eq(branches.id, branchId))
+      .limit(1);
+
+    if (!branch) {
+      throw new Error("Branch not found");
+    }
+
+    // Verify user exists
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check if staff is already assigned to this branch
+    const [existingAssignment] = await db
+      .select()
+      .from(staffAssignments)
+      .where(
+        eq(staffAssignments.userId, userId) &&
+          eq(staffAssignments.branchId, branchId),
+      )
+      .limit(1);
+
+    if (existingAssignment) {
+      throw new Error("Staff is already assigned to this branch");
+    }
+
+    // Create assignment
+    const [newAssignment] = await db
+      .insert(staffAssignments)
+      .values({
+        id: nanoid(),
+        userId,
+        branchId,
+        roleAtBranch,
+        assignedBy,
+      })
+      .returning();
+
+    // Update user's primary branch if not set
+    if (!user.primaryBranchId) {
+      await db
+        .update(users)
+        .set({ primaryBranchId: branchId })
+        .where(eq(users.id, userId));
+    }
+
+    return newAssignment;
+  }
+
+  async removeStaffFromBranch(
+    tenantId: string,
+    branchId: string,
+    userId: string,
+  ) {
+    const db = getTenantDb(tenantId);
+    const { staffAssignments } = await import(
+      "../../db/schemas/tenant.schema"
+    );
+
+    // Find the assignment
+    const [assignment] = await db
+      .select()
+      .from(staffAssignments)
+      .where(
+        eq(staffAssignments.userId, userId) &&
+          eq(staffAssignments.branchId, branchId),
+      )
+      .limit(1);
+
+    if (!assignment) {
+      throw new Error("Staff assignment not found");
+    }
+
+    // Delete the assignment
+    await db.delete(staffAssignments).where(eq(staffAssignments.id, assignment.id));
+
+    return { message: "Staff removed from branch successfully" };
+  }
+
+  async transferStaffBetweenBranches(
+    tenantId: string,
+    userId: string,
+    fromBranchId: string,
+    toBranchId: string,
+    roleAtNewBranch: "BranchManager" | "Supervisor" | "Cashier" | null,
+    transferredBy: string,
+  ) {
+    const db = getTenantDb(tenantId);
+    const { users, staffAssignments } = await import(
+      "../../db/schemas/tenant.schema"
+    );
+
+    // Verify both branches exist
+    const [fromBranch] = await db
+      .select()
+      .from(branches)
+      .where(eq(branches.id, fromBranchId))
+      .limit(1);
+
+    const [toBranch] = await db
+      .select()
+      .from(branches)
+      .where(eq(branches.id, toBranchId))
+      .limit(1);
+
+    if (!fromBranch || !toBranch) {
+      throw new Error("One or both branches not found");
+    }
+
+    // Verify user exists
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check if staff is assigned to fromBranch
+    const [fromAssignment] = await db
+      .select()
+      .from(staffAssignments)
+      .where(
+        eq(staffAssignments.userId, userId) &&
+          eq(staffAssignments.branchId, fromBranchId),
+      )
+      .limit(1);
+
+    if (!fromAssignment) {
+      throw new Error("Staff is not assigned to the source branch");
+    }
+
+    // Check if staff is already assigned to toBranch
+    const [toAssignment] = await db
+      .select()
+      .from(staffAssignments)
+      .where(
+        eq(staffAssignments.userId, userId) &&
+          eq(staffAssignments.branchId, toBranchId),
+      )
+      .limit(1);
+
+    if (toAssignment) {
+      throw new Error("Staff is already assigned to the destination branch");
+    }
+
+    // Remove from old branch
+    await db
+      .delete(staffAssignments)
+      .where(eq(staffAssignments.id, fromAssignment.id));
+
+    // Add to new branch
+    const [newAssignment] = await db
+      .insert(staffAssignments)
+      .values({
+        id: nanoid(),
+        userId,
+        branchId: toBranchId,
+        roleAtBranch: roleAtNewBranch,
+        assignedBy: transferredBy,
+      })
+      .returning();
+
+    // Update user's primary branch
+    await db
+      .update(users)
+      .set({ primaryBranchId: toBranchId })
+      .where(eq(users.id, userId));
+
+    return {
+      message: "Staff transferred successfully",
+      assignment: newAssignment,
+    };
+  }
 }

@@ -1,23 +1,24 @@
 import type { NextFunction, Response } from "express";
 import type { AuthRequest } from "../../types";
 import { errorResponse, successResponse } from "../../utils/response";
-import { BranchesService } from "./branches.service";
+import { InventoryService } from "./inventory.service";
 import {
-  assignStaffSchema,
-  createBranchSchema,
-  toggleInheritanceSchema,
-  transferStaffSchema,
-  updateBranchSchema,
-} from "./branches.validation";
+  adjustInventorySchema,
+  approveTransferSchema,
+  createTransferSchema,
+  setInventorySchema,
+} from "./inventory.validation";
 
-export class BranchesController {
-  private branchesService: BranchesService;
+export class InventoryController {
+  private inventoryService: InventoryService;
 
   constructor() {
-    this.branchesService = new BranchesService();
+    this.inventoryService = new InventoryService();
   }
 
-  getAllBranches = async (
+  // Branch Inventory Methods
+
+  getBranchInventory = async (
     req: AuthRequest,
     res: Response,
     next: NextFunction,
@@ -32,16 +33,18 @@ export class BranchesController {
         );
       }
 
-      const branches = await this.branchesService.getAllBranches(
+      const { branchId } = req.params;
+      const inventory = await this.inventoryService.getBranchInventory(
         req.tenant.tenantId,
+        branchId,
       );
-      return successResponse(res, branches);
+      return successResponse(res, inventory);
     } catch (error: any) {
       next(error);
     }
   };
 
-  getBranchById = async (
+  getProductInventoryAtBranch = async (
     req: AuthRequest,
     res: Response,
     next: NextFunction,
@@ -56,125 +59,130 @@ export class BranchesController {
         );
       }
 
-      const { id } = req.params;
-      const branch = await this.branchesService.getBranchById(
-        req.tenant.tenantId,
-        id,
-      );
-      return successResponse(res, branch);
-    } catch (error: any) {
-      next(error);
-    }
-  };
-
-  createBranch = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      if (!req.tenant) {
-        return errorResponse(
-          res,
-          "Tenant context required",
-          400,
-          "TENANT_CONTEXT_MISSING",
-        );
-      }
-
-      const dto = createBranchSchema.parse(req.body);
-      const branch = await this.branchesService.createBranch(
-        req.tenant.tenantId,
-        dto,
-      );
-      return successResponse(res, branch, 201);
-    } catch (error: any) {
-      next(error);
-    }
-  };
-
-  updateBranch = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      if (!req.tenant) {
-        return errorResponse(
-          res,
-          "Tenant context required",
-          400,
-          "TENANT_CONTEXT_MISSING",
-        );
-      }
-
-      const { id } = req.params;
-      const dto = updateBranchSchema.parse(req.body);
-      const branch = await this.branchesService.updateBranch(
-        req.tenant.tenantId,
-        id,
-        dto,
-      );
-      return successResponse(res, branch);
-    } catch (error: any) {
-      next(error);
-    }
-  };
-
-  deleteBranch = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      if (!req.tenant) {
-        return errorResponse(
-          res,
-          "Tenant context required",
-          400,
-          "TENANT_CONTEXT_MISSING",
-        );
-      }
-
-      const { id } = req.params;
-      const result = await this.branchesService.deleteBranch(
-        req.tenant.tenantId,
-        id,
-      );
-      return successResponse(res, result);
-    } catch (error: any) {
-      next(error);
-    }
-  };
-
-  getEffectiveSettings = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      if (!req.tenant) {
-        return errorResponse(
-          res,
-          "Tenant context required",
-          400,
-          "TENANT_CONTEXT_MISSING",
-        );
-      }
-
-      const { id } = req.params;
-      const settings =
-        await this.branchesService.getEffectiveBranchSettings(
+      const { branchId, productId } = req.params;
+      const inventory =
+        await this.inventoryService.getProductInventoryAtBranch(
           req.tenant.tenantId,
-          id,
+          branchId,
+          productId,
         );
-      return successResponse(res, settings);
+      return successResponse(res, inventory);
     } catch (error: any) {
       next(error);
     }
   };
 
-  toggleInheritance = async (
+  adjustInventory = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!req.tenant) {
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
+      }
+
+      const { branchId } = req.params;
+      const dto = adjustInventorySchema.parse(req.body);
+      const inventory = await this.inventoryService.adjustInventory(
+        req.tenant.tenantId,
+        branchId,
+        dto,
+      );
+      return successResponse(res, inventory);
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  setInventory = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!req.tenant) {
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
+      }
+
+      const { branchId } = req.params;
+      const dto = setInventorySchema.parse(req.body);
+      const inventory = await this.inventoryService.setInventory(
+        req.tenant.tenantId,
+        branchId,
+        dto,
+      );
+      return successResponse(res, inventory);
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  getLowStockItems = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!req.tenant) {
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
+      }
+
+      const { branchId } = req.params;
+      const lowStockItems = await this.inventoryService.getLowStockItems(
+        req.tenant.tenantId,
+        branchId,
+      );
+      return successResponse(res, lowStockItems);
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  // Transfer Methods
+
+  getAllTransfers = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!req.tenant) {
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
+      }
+
+      const branchId = req.query.branchId as string | undefined;
+      const transfers = await this.inventoryService.getAllTransfers(
+        req.tenant.tenantId,
+        branchId,
+      );
+      return successResponse(res, transfers);
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  getTransferById = async (
     req: AuthRequest,
     res: Response,
     next: NextFunction,
@@ -190,21 +198,91 @@ export class BranchesController {
       }
 
       const { id } = req.params;
-      const dto = toggleInheritanceSchema.parse(req.body);
-      const branch = await this.branchesService.toggleInheritance(
+      const transfer = await this.inventoryService.getTransferById(
+        req.tenant.tenantId,
+        id,
+      );
+      return successResponse(res, transfer);
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  createTransfer = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!req.tenant) {
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
+      }
+
+      if (!req.user) {
+        return errorResponse(
+          res,
+          "Authentication required",
+          401,
+          "UNAUTHORIZED",
+        );
+      }
+
+      const dto = createTransferSchema.parse(req.body);
+      const transfer = await this.inventoryService.createTransfer(
+        req.tenant.tenantId,
+        dto,
+        req.user.userId,
+      );
+      return successResponse(res, transfer, 201);
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  approveTransfer = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!req.tenant) {
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
+      }
+
+      if (!req.user) {
+        return errorResponse(
+          res,
+          "Authentication required",
+          401,
+          "UNAUTHORIZED",
+        );
+      }
+
+      const { id } = req.params;
+      const dto = approveTransferSchema.parse(req.body);
+      const transfer = await this.inventoryService.approveTransfer(
         req.tenant.tenantId,
         id,
         dto,
+        req.user.userId,
       );
-      return successResponse(res, branch);
+      return successResponse(res, transfer);
     } catch (error: any) {
       next(error);
     }
   };
 
-  // Staff Management Methods
-
-  getBranchStaff = async (
+  completeTransfer = async (
     req: AuthRequest,
     res: Response,
     next: NextFunction,
@@ -220,116 +298,11 @@ export class BranchesController {
       }
 
       const { id } = req.params;
-      const staff = await this.branchesService.getBranchStaff(
+      const transfer = await this.inventoryService.completeTransfer(
         req.tenant.tenantId,
         id,
       );
-      return successResponse(res, staff);
-    } catch (error: any) {
-      next(error);
-    }
-  };
-
-  assignStaffToBranch = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      if (!req.tenant) {
-        return errorResponse(
-          res,
-          "Tenant context required",
-          400,
-          "TENANT_CONTEXT_MISSING",
-        );
-      }
-
-      if (!req.user) {
-        return errorResponse(
-          res,
-          "Authentication required",
-          401,
-          "UNAUTHORIZED",
-        );
-      }
-
-      const { id } = req.params;
-      const dto = assignStaffSchema.parse(req.body);
-      const assignment = await this.branchesService.assignStaffToBranch(
-        req.tenant.tenantId,
-        id,
-        dto.userId,
-        dto.roleAtBranch || null,
-        req.user.userId,
-      );
-      return successResponse(res, assignment, 201);
-    } catch (error: any) {
-      next(error);
-    }
-  };
-
-  removeStaffFromBranch = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      if (!req.tenant) {
-        return errorResponse(
-          res,
-          "Tenant context required",
-          400,
-          "TENANT_CONTEXT_MISSING",
-        );
-      }
-
-      const { id, userId } = req.params;
-      const result = await this.branchesService.removeStaffFromBranch(
-        req.tenant.tenantId,
-        id,
-        userId,
-      );
-      return successResponse(res, result);
-    } catch (error: any) {
-      next(error);
-    }
-  };
-
-  transferStaff = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      if (!req.tenant) {
-        return errorResponse(
-          res,
-          "Tenant context required",
-          400,
-          "TENANT_CONTEXT_MISSING",
-        );
-      }
-
-      if (!req.user) {
-        return errorResponse(
-          res,
-          "Authentication required",
-          401,
-          "UNAUTHORIZED",
-        );
-      }
-
-      const dto = transferStaffSchema.parse(req.body);
-      const result = await this.branchesService.transferStaffBetweenBranches(
-        req.tenant.tenantId,
-        dto.userId,
-        dto.fromBranchId,
-        dto.toBranchId,
-        dto.roleAtNewBranch || null,
-        req.user.userId,
-      );
-      return successResponse(res, result);
+      return successResponse(res, transfer);
     } catch (error: any) {
       next(error);
     }

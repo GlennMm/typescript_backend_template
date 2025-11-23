@@ -143,6 +143,21 @@ export const toggleInheritanceSchema = z.object({
   inherit: z.boolean(),
 });
 
+// Staff Management Schemas
+export const assignStaffSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  roleAtBranch: z.enum(["BranchManager", "Supervisor", "Cashier"]).nullable().optional(),
+});
+
+export const transferStaffSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  fromBranchId: z.string().min(1, "Source branch ID is required"),
+  toBranchId: z.string().min(1, "Destination branch ID is required"),
+  roleAtNewBranch: z.enum(["BranchManager", "Supervisor", "Cashier"]).nullable().optional(),
+});
+
 export type CreateBranchDto = z.infer<typeof createBranchSchema>;
 export type UpdateBranchDto = z.infer<typeof updateBranchSchema>;
 export type ToggleInheritanceDto = z.infer<typeof toggleInheritanceSchema>;
+export type AssignStaffDto = z.infer<typeof assignStaffSchema>;
+export type TransferStaffDto = z.infer<typeof transferStaffSchema>;
