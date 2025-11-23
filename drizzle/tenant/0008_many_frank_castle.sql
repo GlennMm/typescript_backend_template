@@ -1,0 +1,23 @@
+CREATE TABLE `reorder_suggestions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`branch_id` text NOT NULL,
+	`product_id` text NOT NULL,
+	`current_stock` real NOT NULL,
+	`minimum_stock` real NOT NULL,
+	`suggested_quantity` real NOT NULL,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`snoozed_until` integer,
+	`purchase_id` text,
+	`notes` text,
+	`dismissed_by` text,
+	`dismissed_at` integer,
+	`snoozed_by` text,
+	`snoozed_at` integer,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`purchase_id`) REFERENCES `purchases`(`id`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY (`dismissed_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY (`snoozed_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
+);

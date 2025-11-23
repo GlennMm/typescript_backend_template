@@ -843,6 +843,33 @@ const options: OAS3Options = {
             createdAt: { type: "string", format: "date-time" },
           },
         },
+        ReorderSuggestion: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            branchId: { type: "string" },
+            productId: { type: "string" },
+            productName: { type: "string" },
+            productSku: { type: "string" },
+            currentStock: { type: "number", example: 5 },
+            minimumStock: { type: "number", example: 10 },
+            suggestedQuantity: { type: "number", example: 15 },
+            status: {
+              type: "string",
+              enum: ["pending", "dismissed", "snoozed", "ordered"],
+              example: "pending"
+            },
+            snoozedUntil: { type: "string", format: "date-time" },
+            purchaseId: { type: "string" },
+            notes: { type: "string" },
+            dismissedBy: { type: "string" },
+            dismissedAt: { type: "string", format: "date-time" },
+            snoozedBy: { type: "string" },
+            snoozedAt: { type: "string", format: "date-time" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
       },
     },
     security: [
@@ -962,6 +989,10 @@ const options: OAS3Options = {
       {
         name: "Returns",
         description: "Return and refund management for sales, laybys, and quotations with condition tracking and automatic stock handling",
+      },
+      {
+        name: "Reorder Suggestions",
+        description: "Automatic reorder alerts when stock reaches minimum level with dismiss, snooze, and purchase order creation",
       },
     ],
   },

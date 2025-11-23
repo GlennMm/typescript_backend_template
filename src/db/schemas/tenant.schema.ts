@@ -1686,4 +1686,55 @@ export const returnRefunds = sqliteTable("return_refunds", {
     .default(sql`(unixepoch())`),
 });
 
+// Reorder Suggestions - Automatic reorder alerts when stock reaches minimum level
+export const reorderSuggestions = sqliteTable("reorder_suggestions", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+
+  // Stock levels at time of suggestion
+  currentStock: real("current_stock").notNull(),
+  minimumStock: real("minimum_stock").notNull(),
+  suggestedQuantity: real("suggested_quantity").notNull(), // How much to order
+
+  // Status
+  status: text("status", {
+    enum: ["pending", "dismissed", "snoozed", "ordered"],
+  })
+    .notNull()
+    .default("pending"),
+
+  // Snooze
+  snoozedUntil: integer("snoozed_until", { mode: "timestamp" }), // If snoozed, alert again after this date
+
+  // Link to created purchase order if ordered
+  purchaseId: text("purchase_id").references(() => purchases.id, {
+    onDelete: "set null",
+  }),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit
+  dismissedBy: text("dismissed_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  dismissedAt: integer("dismissed_at", { mode: "timestamp" }),
+  snoozedBy: text("snoozed_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  snoozedAt: integer("snoozed_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 
