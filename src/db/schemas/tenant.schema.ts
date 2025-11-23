@@ -1261,3 +1261,182 @@ export const dayEndPayments = sqliteTable("day_end_payments", {
     .default(sql`(unixepoch())`),
 });
 
+// Expense Categories - Hierarchical expense categories per branch
+export const expenseCategories = sqliteTable("expense_categories", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  parentId: text("parent_id").references((): any => expenseCategories.id, {
+    onDelete: "set null",
+  }), // For hierarchical categories
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false), // Pre-defined categories
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Expense Budgets - Budget tracking per category and period
+export const expenseBudgets = sqliteTable("expense_budgets", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  categoryId: text("category_id")
+    .notNull()
+    .references(() => expenseCategories.id, { onDelete: "cascade" }),
+
+  // Period
+  period: text("period", {
+    enum: ["monthly", "quarterly", "yearly"],
+  }).notNull(),
+  year: integer("year").notNull(), // e.g., 2025
+  month: integer("month"), // 1-12 (for monthly)
+  quarter: integer("quarter"), // 1-4 (for quarterly)
+
+  // Budget amount
+  budgetAmount: real("budget_amount").notNull(),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Expenses - Main expense records
+export const expenses = sqliteTable("expenses", {
+  id: text("id").primaryKey(),
+  expenseNumber: text("expense_number").notNull().unique(), // EXP2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  categoryId: text("category_id")
+    .notNull()
+    .references(() => expenseCategories.id, { onDelete: "restrict" }),
+
+  // Vendor/Payee (free text, not linked to suppliers)
+  vendor: text("vendor").notNull(),
+  description: text("description").notNull(),
+
+  // Amount
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  exchangeRate: real("exchange_rate").notNull(), // Snapshot at creation
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(), // amount * exchangeRate
+
+  // Dates
+  expenseDate: integer("expense_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  dueDate: integer("due_date", { mode: "timestamp" }),
+  paidDate: integer("paid_date", { mode: "timestamp" }),
+
+  // Tax & Recurring
+  isTaxDeductible: integer("is_tax_deductible", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  isRecurring: integer("is_recurring", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  recurringFrequency: text("recurring_frequency", {
+    enum: ["monthly", "quarterly", "yearly"],
+  }), // null if not recurring
+  recurringEndDate: integer("recurring_end_date", { mode: "timestamp" }), // null = indefinite
+  recurringParentId: text("recurring_parent_id").references(
+    (): any => expenses.id,
+    { onDelete: "set null" },
+  ), // Link to original recurring expense
+
+  // Payment tracking
+  amountPaid: real("amount_paid").notNull().default(0), // Sum of payments in base currency
+  amountDue: real("amount_due").notNull(), // amountInBaseCurrency - amountPaid
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "submitted", "approved", "rejected", "paid"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit trail
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  submittedBy: text("submitted_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  submittedAt: integer("submitted_at", { mode: "timestamp" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+  rejectedBy: text("rejected_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  rejectedAt: integer("rejected_at", { mode: "timestamp" }),
+  rejectionReason: text("rejection_reason"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Expense Payments - Multi-currency payment tracking
+export const expensePayments = sqliteTable("expense_payments", {
+  id: text("id").primaryKey(),
+  expenseId: text("expense_id")
+    .notNull()
+    .references(() => expenses.id, { onDelete: "cascade" }),
+
+  // Payment details
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+
+  // Exchange rate snapshot
+  exchangeRate: real("exchange_rate").notNull(),
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(), // amount * exchangeRate
+
+  // Reference & notes
+  referenceNumber: text("reference_number"),
+  paymentDate: integer("payment_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+
