@@ -50,6 +50,13 @@
       "when": 1763914821860,
       "tag": "0006_gray_micromax",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1763915105417,
+      "tag": "0007_skinny_kree",
+      "breakpoints": true
     }
   ]
 }

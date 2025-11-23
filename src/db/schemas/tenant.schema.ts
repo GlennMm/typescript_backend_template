@@ -717,6 +717,9 @@ export const branchSettings = sqliteTable("branch_settings", {
   laybyDeposit: real("layby_deposit"), // Fixed amount deposit
   cancellationFee: real("cancellation_fee"), // null = inherit from tenant
 
+  // Return settings
+  returnWindowDays: integer("return_window_days").default(30), // Number of days allowed for returns
+
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -1519,6 +1522,166 @@ export const inventoryLossItems = sqliteTable("inventory_loss_items", {
     .notNull()
     .default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Returns - Return requests for sales, laybys, and quotations
+export const returns = sqliteTable("returns", {
+  id: text("id").primaryKey(),
+  returnNumber: text("return_number").notNull().unique(), // RET2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Link to original transaction (one of these will be set)
+  saleId: text("sale_id").references(() => sales.id, {
+    onDelete: "restrict",
+  }),
+  laybyId: text("layby_id").references(() => laybys.id, {
+    onDelete: "restrict",
+  }),
+  quotationId: text("quotation_id").references(() => quotations.id, {
+    onDelete: "restrict",
+  }),
+
+  // Customer
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "restrict" }),
+
+  // Return details
+  reason: text("reason").notNull(), // Required reason for return
+  notes: text("notes"),
+
+  // Financial
+  totalAmount: real("total_amount").notNull().default(0), // Total refund amount
+  totalRefunded: real("total_refunded").notNull().default(0), // Amount refunded so far
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "approved", "processed"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Dates
+  returnDate: integer("return_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+  processedBy: text("processed_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  processedAt: integer("processed_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Return Items - Line items for returns with condition tracking
+export const returnItems = sqliteTable("return_items", {
+  id: text("id").primaryKey(),
+  returnId: text("return_id")
+    .notNull()
+    .references(() => returns.id, { onDelete: "cascade" }),
+
+  // Link to original line item (one of these will be set)
+  saleItemId: text("sale_item_id").references(() => saleItems.id, {
+    onDelete: "restrict",
+  }),
+  laybyItemId: text("layby_item_id").references(() => laybyItems.id, {
+    onDelete: "restrict",
+  }),
+  quotationItemId: text("quotation_item_id").references(
+    () => quotationItems.id,
+    { onDelete: "restrict" },
+  ),
+
+  // Product details
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+  quantity: real("quantity").notNull(),
+  price: real("price").notNull(), // Price at time of original sale
+
+  // Condition tracking
+  condition: text("condition", {
+    enum: ["good", "damaged"],
+  })
+    .notNull()
+    .default("good"),
+  conditionNotes: text("condition_notes"),
+
+  // Link to inventory loss if damaged
+  inventoryLossId: text("inventory_loss_id").references(
+    () => inventoryLosses.id,
+    { onDelete: "set null" },
+  ),
+
+  // Refund amount for this item
+  refundAmount: real("refund_amount").notNull(),
+
+  // Notes
+  notes: text("notes"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Return Refunds - Refund payments for returns
+export const returnRefunds = sqliteTable("return_refunds", {
+  id: text("id").primaryKey(),
+  returnId: text("return_id")
+    .notNull()
+    .references(() => returns.id, { onDelete: "cascade" }),
+
+  // Refund details
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+
+  // Exchange rate snapshot
+  exchangeRate: real("exchange_rate").notNull(),
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(),
+
+  // Link to shift if cash refund
+  shiftId: text("shift_id").references(() => shifts.id, {
+    onDelete: "set null",
+  }),
+
+  // Reference & notes
+  referenceNumber: text("reference_number"),
+  refundDate: integer("refund_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
 });
