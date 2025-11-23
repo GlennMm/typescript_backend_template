@@ -1,16 +1,16 @@
-import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
+import jwt from "jsonwebtoken";
+import { env } from "../config/env";
 
 export interface AccessTokenPayload {
   userId: string;
-  role: 'SuperAdmin' | 'TenantAdmin' | 'TenantUser';
+  role: "SuperAdmin" | "TenantAdmin" | "TenantUser";
   tenantId?: string; // Only for tenant users
 }
 
 export interface RefreshTokenPayload {
   userId: string;
   tokenId: string;
-  role: 'SuperAdmin' | 'TenantAdmin' | 'TenantUser';
+  role: "SuperAdmin" | "TenantAdmin" | "TenantUser";
   tenantId?: string;
 }
 

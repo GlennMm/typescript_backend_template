@@ -1,2 +1,2 @@
-export * from './main.schema';
-export * from './tenant.schema';
+export * from "./main.schema";
+export * from "./tenant.schema";

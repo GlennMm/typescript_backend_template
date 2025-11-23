@@ -1,13 +1,16 @@
-import { eq } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
-import { getMainDb, createTenantDb } from '../../db/connection';
-import { tenants, subscriptionPlans } from '../../db/schemas/main.schema';
-import { users } from '../../db/schemas/tenant.schema';
-import { hashPassword } from '../../utils/password';
-import { generateOTP, hashOTP, getOTPExpiration } from '../../utils/otp';
-import { env } from '../../config/env';
-import { CreateTenantDto, UpdateTenantDto, UpdateSubscriptionDto } from './tenants.validation';
-import { join } from 'path';
+import { join } from "node:path";
+import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import { env } from "../../config/env";
+import { createTenantDb, getMainDb } from "../../db/connection";
+import { subscriptionPlans, tenants } from "../../db/schemas/main.schema";
+import { users } from "../../db/schemas/tenant.schema";
+import { generateOTP, getOTPExpiration, hashOTP } from "../../utils/otp";
+import type {
+  CreateTenantDto,
+  UpdateSubscriptionDto,
+  UpdateTenantDto,
+} from "./tenants.validation";
 
 export class TenantsService {
   async getAllTenants() {
@@ -26,7 +29,10 @@ export class TenantsService {
         createdAt: tenants.createdAt,
       })
       .from(tenants)
-      .leftJoin(subscriptionPlans, eq(tenants.subscriptionPlanId, subscriptionPlans.id));
+      .leftJoin(
+        subscriptionPlans,
+        eq(tenants.subscriptionPlanId, subscriptionPlans.id),
+      );
 
     return allTenants;
   }
@@ -54,12 +60,15 @@ export class TenantsService {
         updatedAt: tenants.updatedAt,
       })
       .from(tenants)
-      .leftJoin(subscriptionPlans, eq(tenants.subscriptionPlanId, subscriptionPlans.id))
+      .leftJoin(
+        subscriptionPlans,
+        eq(tenants.subscriptionPlanId, subscriptionPlans.id),
+      )
       .where(eq(tenants.id, tenantId))
       .limit(1);
 
     if (!tenant) {
-      throw new Error('Tenant not found');
+      throw new Error("Tenant not found");
     }
 
     return tenant;
@@ -76,7 +85,7 @@ export class TenantsService {
       .limit(1);
 
     if (existingTenant) {
-      throw new Error('Tenant with this slug already exists');
+      throw new Error("Tenant with this slug already exists");
     }
 
     // Verify subscription plan exists
@@ -87,7 +96,7 @@ export class TenantsService {
       .limit(1);
 
     if (!plan) {
-      throw new Error('Subscription plan not found');
+      throw new Error("Subscription plan not found");
     }
 
     const tenantId = nanoid();
@@ -101,7 +110,7 @@ export class TenantsService {
         name: dto.name,
         slug: dto.slug,
         subscriptionPlanId: dto.subscriptionPlanId,
-        subscriptionStatus: 'active',
+        subscriptionStatus: "active",
         subscriptionStartDate: new Date(),
         dbPath,
         isActive: true,
@@ -123,7 +132,7 @@ export class TenantsService {
       email: dto.adminEmail,
       passwordHash: otpHash,
       name: dto.adminName,
-      role: 'TenantAdmin',
+      role: "TenantAdmin",
       isActive: true,
       activatedAt: new Date(),
       otpHash,
@@ -152,7 +161,7 @@ export class TenantsService {
       .limit(1);
 
     if (!existingTenant) {
-      throw new Error('Tenant not found');
+      throw new Error("Tenant not found");
     }
 
     const [updatedTenant] = await db
@@ -177,7 +186,7 @@ export class TenantsService {
       .limit(1);
 
     if (!existingTenant) {
-      throw new Error('Tenant not found');
+      throw new Error("Tenant not found");
     }
 
     // If changing plan, verify it exists
@@ -189,15 +198,18 @@ export class TenantsService {
         .limit(1);
 
       if (!plan) {
-        throw new Error('Subscription plan not found');
+        throw new Error("Subscription plan not found");
       }
     }
 
     // Calculate grace period if status is changing to grace_period
     let gracePeriodEndsAt = existingTenant.gracePeriodEndsAt;
-    if (dto.subscriptionStatus === 'grace_period') {
+    if (dto.subscriptionStatus === "grace_period") {
       const now = new Date();
-      gracePeriodEndsAt = new Date(now.getTime() + env.SUBSCRIPTION_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+      gracePeriodEndsAt = new Date(
+        now.getTime() +
+          env.SUBSCRIPTION_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000,
+      );
     }
 
     const updateData: any = {
@@ -240,12 +252,12 @@ export class TenantsService {
       .limit(1);
 
     if (!tenant) {
-      throw new Error('Tenant not found');
+      throw new Error("Tenant not found");
     }
 
     await db.delete(tenants).where(eq(tenants.id, tenantId));
 
-    return { message: 'Tenant deleted successfully' };
+    return { message: "Tenant deleted successfully" };
   }
 
   async getSubscriptionPlans() {

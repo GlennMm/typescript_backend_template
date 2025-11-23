@@ -1,6 +1,6 @@
-import app from './app';
-import { env } from './config/env';
-import logger from './utils/logger';
+import app from "./app";
+import { env } from "./config/env";
+import logger from "./utils/logger";
 
 const server = app.listen(env.PORT, env.HOST, () => {
   logger.info(`🚀 Server running on http://${env.HOST}:${env.PORT}`);
@@ -10,18 +10,18 @@ const server = app.listen(env.PORT, env.HOST, () => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
+process.on("SIGTERM", () => {
+  logger.info("SIGTERM signal received: closing HTTP server");
   server.close(() => {
-    logger.info('HTTP server closed');
+    logger.info("HTTP server closed");
     process.exit(0);
   });
 });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT signal received: closing HTTP server');
+process.on("SIGINT", () => {
+  logger.info("SIGINT signal received: closing HTTP server");
   server.close(() => {
-    logger.info('HTTP server closed');
+    logger.info("HTTP server closed");
     process.exit(0);
   });
 });

@@ -1,10 +1,14 @@
-import express from 'express';
-import { helmetMiddleware, corsMiddleware, rateLimiter } from './middleware/security';
-import { errorHandler } from './middleware/errorHandler';
-import authRoutes from './features/auth/auth.routes';
-import usersRoutes from './features/users/users.routes';
-import tenantsRoutes from './features/tenants/tenants.routes';
-import logger from './utils/logger';
+import express from "express";
+import authRoutes from "./features/auth/auth.routes";
+import tenantsRoutes from "./features/tenants/tenants.routes";
+import usersRoutes from "./features/users/users.routes";
+import { errorHandler } from "./middleware/errorHandler";
+import {
+  corsMiddleware,
+  helmetMiddleware,
+  rateLimiter,
+} from "./middleware/security";
+import logger from "./utils/logger";
 
 const app = express();
 
@@ -18,37 +22,37 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   logger.info(`${req.method} ${req.path}`, {
     ip: req.ip,
-    userAgent: req.get('user-agent'),
+    userAgent: req.get("user-agent"),
   });
   next();
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get("/health", (_req, res) => {
   res.json({
     success: true,
     data: {
-      status: 'healthy',
+      status: "healthy",
       timestamp: new Date().toISOString(),
     },
   });
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/tenants', tenantsRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", usersRoutes);
+app.use("/api/tenants", tenantsRoutes);
 
 // 404 handler
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     success: false,
     error: {
-      message: 'Route not found',
-      code: 'NOT_FOUND',
+      message: "Route not found",
+      code: "NOT_FOUND",
     },
   });
 });

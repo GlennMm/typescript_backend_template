@@ -1,5 +1,5 @@
-import crypto from 'crypto';
-import { hashPassword } from './password';
+import crypto from "node:crypto";
+import { hashPassword } from "./password";
 
 /**
  * Generate a secure OTP (One-Time Password)
@@ -7,8 +7,8 @@ import { hashPassword } from './password';
  * @returns A random alphanumeric OTP
  */
 export function generateOTP(length: number = 8): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluded similar looking chars (0,O,1,I)
-  let otp = '';
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Excluded similar looking chars (0,O,1,I)
+  let otp = "";
 
   const randomBytes = crypto.randomBytes(length);
   for (let i = 0; i < length; i++) {
@@ -24,11 +24,11 @@ export function generateOTP(length: number = 8): string {
  * @returns A random numeric OTP
  */
 export function generateNumericOTP(length: number = 6): string {
-  const min = Math.pow(10, length - 1);
-  const max = Math.pow(10, length) - 1;
+  const min = 10 ** (length - 1);
+  const max = 10 ** length - 1;
   const randomBytes = crypto.randomBytes(4);
   const randomNumber = randomBytes.readUInt32BE(0);
-  return String(min + (randomNumber % (max - min + 1))).padStart(length, '0');
+  return String(min + (randomNumber % (max - min + 1))).padStart(length, "0");
 }
 
 /**

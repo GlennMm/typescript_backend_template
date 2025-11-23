@@ -1,10 +1,14 @@
-import { Request } from 'express';
+import type { Request } from "express";
 
-export type Role = 'SuperAdmin' | 'TenantAdmin' | 'TenantUser';
+export type Role = "SuperAdmin" | "TenantAdmin" | "TenantUser";
 
-export type SubscriptionStatus = 'active' | 'inactive' | 'suspended' | 'grace_period';
+export type SubscriptionStatus =
+  | "active"
+  | "inactive"
+  | "suspended"
+  | "grace_period";
 
-export type SubscriptionPlan = 'Free' | 'Pro' | 'Enterprise';
+export type SubscriptionPlan = "Free" | "Pro" | "Enterprise";
 
 export interface AuthUser {
   userId: string;
