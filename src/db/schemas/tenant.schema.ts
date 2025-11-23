@@ -374,14 +374,40 @@ export const stockTakeItems = sqliteTable("stock_take_items", {
 // Customers - Tenant-wide customer records
 export const customers = sqliteTable("customers", {
   id: text("id").primaryKey(),
+
+  // Name fields
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
+  name: text("name").notNull(), // Full name (for sales feature)
+
+  // Customer type & tax info
+  customerType: text("customer_type", {
+    enum: ["individual", "business"],
+  })
+    .notNull()
+    .default("individual"),
+  vatNumber: text("vat_number"),
+  tinNumber: text("tin_number"),
+
+  // Contact
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
+
+  // Branch association (for walk-in customers)
+  branchId: text("branch_id").references(() => branches.id, {
+    onDelete: "cascade",
+  }),
+  isWalkIn: integer("is_walk_in", { mode: "boolean" })
+    .notNull()
+    .default(false),
+
+  // Additional fields
   dateOfBirth: integer("date_of_birth", { mode: "timestamp" }),
   loyaltyPoints: integer("loyalty_points").default(0),
   lastPurchaseAt: integer("last_purchase_at", { mode: "timestamp" }),
+
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -642,6 +668,407 @@ export const productCostHistory = sqliteTable("product_cost_history", {
     .notNull()
     .references(() => users.id, { onDelete: "set null" }),
   changedAt: integer("changed_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Tenant Settings - Sales-related settings at tenant level
+export const tenantSettings = sqliteTable("tenant_settings", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(), // Reference to main DB tenant
+
+  // Quotation settings
+  quotationValidityDays: integer("quotation_validity_days")
+    .notNull()
+    .default(30),
+
+  // Tax settings
+  taxMode: text("tax_mode", {
+    enum: ["inclusive", "exclusive"],
+  })
+    .notNull()
+    .default("exclusive"),
+  taxRate: real("tax_rate").notNull().default(0), // e.g., 15 for 15%
+
+  // Layby settings
+  laybyFee: real("layby_fee").notNull().default(0),
+  cancellationFee: real("cancellation_fee").notNull().default(0),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Branch Settings - Branch-level overrides for sales settings
+export const branchSettings = sqliteTable("branch_settings", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" })
+    .unique(),
+
+  // Quotation settings (override tenant)
+  quotationValidityDays: integer("quotation_validity_days"), // null = inherit from tenant
+
+  // Layby settings (override tenant)
+  laybyDeposit: real("layby_deposit"), // Fixed amount deposit
+  cancellationFee: real("cancellation_fee"), // null = inherit from tenant
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Branch Discounts - Named discounts per branch
+export const branchDiscounts = sqliteTable("branch_discounts", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // e.g., "Senior Citizen", "Wholesale"
+  percentage: real("percentage").notNull(), // e.g., 10 for 10%
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Sales - Credit sales and till sales
+export const sales = sqliteTable("sales", {
+  id: text("id").primaryKey(),
+  invoiceNumber: text("invoice_number").notNull().unique(), // INV2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "restrict" }),
+
+  // Sale type
+  saleType: text("sale_type", {
+    enum: ["credit", "till"],
+  })
+    .notNull()
+    .default("credit"),
+
+  // Dates
+  saleDate: integer("sale_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+
+  // Amounts
+  subtotal: real("subtotal").notNull().default(0), // Sum of line items (after line discounts)
+  saleDiscountId: text("sale_discount_id").references(
+    () => branchDiscounts.id,
+    { onDelete: "set null" },
+  ),
+  saleDiscountPercentage: real("sale_discount_percentage").default(0), // Snapshot
+  discountAmount: real("discount_amount").default(0), // subtotal * saleDiscountPercentage / 100
+  taxMode: text("tax_mode", {
+    enum: ["inclusive", "exclusive"],
+  }).notNull(), // Snapshot from tenant settings
+  taxRate: real("tax_rate").notNull(), // Snapshot
+  taxAmount: real("tax_amount").notNull().default(0),
+  total: real("total").notNull().default(0), // Final amount
+
+  // Payment tracking (for credit sales)
+  amountPaid: real("amount_paid").notNull().default(0), // Sum in base currency
+  amountDue: real("amount_due").notNull().default(0), // total - amountPaid
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "confirmed", "partially_paid", "fully_paid", "delivered", "completed"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Sale Items - Line items for sales
+export const saleItems = sqliteTable("sale_items", {
+  id: text("id").primaryKey(),
+  saleId: text("sale_id")
+    .notNull()
+    .references(() => sales.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+
+  quantity: real("quantity").notNull(),
+  price: real("price").notNull(), // Snapshot from product
+
+  // Line-level discount
+  discountId: text("discount_id").references(() => branchDiscounts.id, {
+    onDelete: "set null",
+  }),
+  discountPercentage: real("discount_percentage").default(0), // Snapshot
+  discountAmount: real("discount_amount").default(0), // (price * quantity) * discountPercentage / 100
+  lineTotal: real("line_total").notNull(), // (price * quantity) - discountAmount
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Quotations - Sales quotations
+export const quotations = sqliteTable("quotations", {
+  id: text("id").primaryKey(),
+  quotationNumber: text("quotation_number").notNull().unique(), // QT2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "restrict" }),
+
+  // Dates
+  quotationDate: integer("quotation_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  validityDays: integer("validity_days").notNull(), // Snapshot from settings
+  expiryDate: integer("expiry_date", { mode: "timestamp" }).notNull(), // Calculated
+
+  // Amounts
+  subtotal: real("subtotal").notNull().default(0),
+  saleDiscountId: text("sale_discount_id").references(
+    () => branchDiscounts.id,
+    { onDelete: "set null" },
+  ),
+  saleDiscountPercentage: real("sale_discount_percentage").default(0),
+  discountAmount: real("discount_amount").default(0),
+  taxMode: text("tax_mode", {
+    enum: ["inclusive", "exclusive"],
+  }).notNull(),
+  taxRate: real("tax_rate").notNull(),
+  taxAmount: real("tax_amount").notNull().default(0),
+  total: real("total").notNull().default(0),
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "sent", "accepted", "rejected", "expired"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Conversion tracking
+  convertedToSaleId: text("converted_to_sale_id").references(() => sales.id, {
+    onDelete: "set null",
+  }),
+  convertedToLaybyId: text("converted_to_layby_id").references(
+    (): any => laybys.id,
+    { onDelete: "set null" },
+  ),
+  convertedAt: integer("converted_at", { mode: "timestamp" }),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  sentBy: text("sent_by").references(() => users.id, { onDelete: "set null" }),
+  sentAt: integer("sent_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Quotation Items - Line items for quotations
+export const quotationItems = sqliteTable("quotation_items", {
+  id: text("id").primaryKey(),
+  quotationId: text("quotation_id")
+    .notNull()
+    .references(() => quotations.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+
+  quantity: real("quantity").notNull(),
+  price: real("price").notNull(),
+
+  // Line-level discount
+  discountId: text("discount_id").references(() => branchDiscounts.id, {
+    onDelete: "set null",
+  }),
+  discountPercentage: real("discount_percentage").default(0),
+  discountAmount: real("discount_amount").default(0),
+  lineTotal: real("line_total").notNull(),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Laybys - Layaway sales
+export const laybys = sqliteTable("laybys", {
+  id: text("id").primaryKey(),
+  laybyNumber: text("layby_number").notNull().unique(), // LB2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "restrict" }),
+
+  // Dates
+  laybyDate: integer("layby_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  collectedAt: integer("collected_at", { mode: "timestamp" }),
+  cancelledAt: integer("cancelled_at", { mode: "timestamp" }),
+
+  // Amounts
+  subtotal: real("subtotal").notNull().default(0),
+  saleDiscountId: text("sale_discount_id").references(
+    () => branchDiscounts.id,
+    { onDelete: "set null" },
+  ),
+  saleDiscountPercentage: real("sale_discount_percentage").default(0),
+  discountAmount: real("discount_amount").default(0),
+  taxMode: text("tax_mode", {
+    enum: ["inclusive", "exclusive"],
+  }).notNull(),
+  taxRate: real("tax_rate").notNull(),
+  taxAmount: real("tax_amount").notNull().default(0),
+  total: real("total").notNull().default(0),
+
+  // Deposit & payment tracking
+  depositRequired: real("deposit_required").notNull(), // Snapshot from settings
+  amountPaid: real("amount_paid").notNull().default(0),
+  amountDue: real("amount_due").notNull().default(0),
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "active", "partially_paid", "fully_paid", "collected", "cancelled"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Cancellation
+  cancellationFee: real("cancellation_fee"), // Snapshot from settings
+  cancellationReason: text("cancellation_reason"),
+  cancelledBy: text("cancelled_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Layby Items - Line items for laybys
+export const laybyItems = sqliteTable("layby_items", {
+  id: text("id").primaryKey(),
+  laybyId: text("layby_id")
+    .notNull()
+    .references(() => laybys.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+
+  quantity: real("quantity").notNull(),
+  price: real("price").notNull(),
+
+  // Stock reservation tracking
+  stockReserved: integer("stock_reserved", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  stockReservedAt: integer("stock_reserved_at", { mode: "timestamp" }),
+
+  // Line-level discount
+  discountId: text("discount_id").references(() => branchDiscounts.id, {
+    onDelete: "set null",
+  }),
+  discountPercentage: real("discount_percentage").default(0),
+  discountAmount: real("discount_amount").default(0),
+  lineTotal: real("line_total").notNull(),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Payments - Payments for sales and laybys with receipt numbers
+export const payments = sqliteTable("payments", {
+  id: text("id").primaryKey(),
+  receiptNumber: text("receipt_number").notNull().unique(), // RCP2025-00001
+
+  // Link to sale or layby
+  saleId: text("sale_id").references(() => sales.id, { onDelete: "cascade" }),
+  laybyId: text("layby_id").references(() => laybys.id, {
+    onDelete: "cascade",
+  }),
+
+  // Payment details
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+
+  // Exchange rate snapshot
+  exchangeRate: real("exchange_rate").notNull(),
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(), // amount * exchangeRate
+
+  // Reference & notes
+  referenceNumber: text("reference_number"),
+  paymentDate: integer("payment_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
 });
