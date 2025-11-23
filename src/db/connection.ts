@@ -1,11 +1,11 @@
-import { Database } from 'bun:sqlite';
-import { drizzle, BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
-import * as mainSchema from './schemas/main.schema';
-import * as tenantSchema from './schemas/tenant.schema';
-import { env } from '../config/env';
-import { mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { Database } from "bun:sqlite";
+import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
+import { migrate } from "drizzle-orm/bun-sqlite/migrator";
+import { existsSync, mkdirSync } from "fs";
+import { dirname, join } from "path";
+import { env } from "../config/env";
+import * as mainSchema from "./schemas/main.schema";
+import * as tenantSchema from "./schemas/tenant.schema";
 
 // Main database instance
 let mainDbInstance: BunSQLiteDatabase<typeof mainSchema> | null = null;
@@ -22,8 +22,8 @@ export function getMainDb(): BunSQLiteDatabase<typeof mainSchema> {
     }
 
     const sqlite = new Database(env.MAIN_DB_PATH, { create: true });
-    sqlite.run('PRAGMA journal_mode = WAL');
-    sqlite.run('PRAGMA foreign_keys = ON');
+    sqlite.run("PRAGMA journal_mode = WAL");
+    sqlite.run("PRAGMA foreign_keys = ON");
 
     mainDbInstance = drizzle(sqlite, { schema: mainSchema });
   }
@@ -31,7 +31,9 @@ export function getMainDb(): BunSQLiteDatabase<typeof mainSchema> {
   return mainDbInstance;
 }
 
-export function getTenantDb(tenantId: string): BunSQLiteDatabase<typeof tenantSchema> {
+export function getTenantDb(
+  tenantId: string,
+): BunSQLiteDatabase<typeof tenantSchema> {
   const cached = tenantDbCache.get(tenantId);
   if (cached) {
     return cached;
@@ -45,8 +47,8 @@ export function getTenantDb(tenantId: string): BunSQLiteDatabase<typeof tenantSc
   }
 
   const sqlite = new Database(dbPath, { create: true });
-  sqlite.run('PRAGMA journal_mode = WAL');
-  sqlite.run('PRAGMA foreign_keys = ON');
+  sqlite.run("PRAGMA journal_mode = WAL");
+  sqlite.run("PRAGMA foreign_keys = ON");
 
   const db = drizzle(sqlite, { schema: tenantSchema });
 
@@ -55,7 +57,9 @@ export function getTenantDb(tenantId: string): BunSQLiteDatabase<typeof tenantSc
   return db;
 }
 
-export function createTenantDb(tenantId: string): BunSQLiteDatabase<typeof tenantSchema> {
+export function createTenantDb(
+  tenantId: string,
+): BunSQLiteDatabase<typeof tenantSchema> {
   const dbPath = join(env.TENANT_DB_DIR, `${tenantId}.db`);
 
   // Ensure directory exists
@@ -64,13 +68,13 @@ export function createTenantDb(tenantId: string): BunSQLiteDatabase<typeof tenan
   }
 
   const sqlite = new Database(dbPath, { create: true });
-  sqlite.run('PRAGMA journal_mode = WAL');
-  sqlite.run('PRAGMA foreign_keys = ON');
+  sqlite.run("PRAGMA journal_mode = WAL");
+  sqlite.run("PRAGMA foreign_keys = ON");
 
   const db = drizzle(sqlite, { schema: tenantSchema });
 
   // Run migrations for tenant database
-  migrate(db, { migrationsFolder: './drizzle/tenant' });
+  migrate(db, { migrationsFolder: "./drizzle/tenant" });
 
   tenantDbCache.set(tenantId, db);
 

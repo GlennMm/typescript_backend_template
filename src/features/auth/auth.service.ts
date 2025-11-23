@@ -1,12 +1,19 @@
-import { eq } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
-import { getMainDb, getTenantDb } from '../../db/connection';
-import { superAdmins, superAdminRefreshTokens } from '../../db/schemas/main.schema';
-import { users, refreshTokens } from '../../db/schemas/tenant.schema';
-import { hashPassword, verifyPassword } from '../../utils/password';
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
-import { LoginDto, RegisterDto, RefreshTokenDto } from './auth.validation';
-import { env } from '../../config/env';
+import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import { env } from "../../config/env";
+import { getMainDb, getTenantDb } from "../../db/connection";
+import {
+  superAdminRefreshTokens,
+  superAdmins,
+} from "../../db/schemas/main.schema";
+import { refreshTokens, users } from "../../db/schemas/tenant.schema";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../../utils/jwt";
+import { hashPassword, verifyPassword } from "../../utils/password";
+import type { LoginDto, RefreshTokenDto, RegisterDto } from "./auth.validation";
 
 export class AuthService {
   // Super Admin Login
@@ -20,28 +27,31 @@ export class AuthService {
       .limit(1);
 
     if (!admin) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     if (!admin.isActive) {
-      throw new Error('Account is inactive');
+      throw new Error("Account is inactive");
     }
 
-    const isPasswordValid = await verifyPassword(dto.password, admin.passwordHash);
+    const isPasswordValid = await verifyPassword(
+      dto.password,
+      admin.passwordHash,
+    );
     if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     const tokenId = nanoid();
     const accessToken = generateAccessToken({
       userId: admin.id,
-      role: 'SuperAdmin',
+      role: "SuperAdmin",
     });
 
     const refreshToken = generateRefreshToken({
       userId: admin.id,
       tokenId,
-      role: 'SuperAdmin',
+      role: "SuperAdmin",
     });
 
     // Store refresh token
@@ -62,7 +72,7 @@ export class AuthService {
         id: admin.id,
         email: admin.email,
         name: admin.name,
-        role: 'SuperAdmin' as const,
+        role: "SuperAdmin" as const,
       },
     };
   }
@@ -78,23 +88,30 @@ export class AuthService {
       .limit(1);
 
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     if (!user.isActive) {
-      throw new Error('Account is not activated. Please contact your administrator.');
+      throw new Error(
+        "Account is not activated. Please contact your administrator.",
+      );
     }
 
     // Check if user has OTP and if it's expired
     if (user.otpHash && user.otpExpiresAt) {
       if (user.otpExpiresAt < new Date()) {
-        throw new Error('OTP has expired. Please contact your administrator for a new OTP.');
+        throw new Error(
+          "OTP has expired. Please contact your administrator for a new OTP.",
+        );
       }
     }
 
-    const isPasswordValid = await verifyPassword(dto.password, user.passwordHash);
+    const isPasswordValid = await verifyPassword(
+      dto.password,
+      user.passwordHash,
+    );
     if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     // If OTP was used successfully, clear OTP fields
@@ -148,7 +165,11 @@ export class AuthService {
   }
 
   // Register Tenant User
-  async registerTenantUser(tenantId: string, dto: RegisterDto, role: 'TenantAdmin' | 'TenantUser') {
+  async registerTenantUser(
+    tenantId: string,
+    dto: RegisterDto,
+    role: "TenantAdmin" | "TenantUser",
+  ) {
     const db = getTenantDb(tenantId);
 
     // Check if user already exists
@@ -159,7 +180,7 @@ export class AuthService {
       .limit(1);
 
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error("User with this email already exists");
     }
 
     const passwordHash = await hashPassword(dto.password);
@@ -191,7 +212,7 @@ export class AuthService {
       const payload = verifyRefreshToken(dto.refreshToken);
 
       // Check if it's a super admin or tenant user
-      if (payload.role === 'SuperAdmin') {
+      if (payload.role === "SuperAdmin") {
         const db = getMainDb();
 
         const [tokenRecord] = await db
@@ -201,7 +222,7 @@ export class AuthService {
           .limit(1);
 
         if (!tokenRecord || tokenRecord.expiresAt < new Date()) {
-          throw new Error('Invalid or expired refresh token');
+          throw new Error("Invalid or expired refresh token");
         }
 
         const accessToken = generateAccessToken({
@@ -212,7 +233,7 @@ export class AuthService {
         return { accessToken };
       } else {
         if (!payload.tenantId) {
-          throw new Error('Invalid refresh token');
+          throw new Error("Invalid refresh token");
         }
 
         const db = getTenantDb(payload.tenantId);
@@ -224,7 +245,7 @@ export class AuthService {
           .limit(1);
 
         if (!tokenRecord || tokenRecord.expiresAt < new Date()) {
-          throw new Error('Invalid or expired refresh token');
+          throw new Error("Invalid or expired refresh token");
         }
 
         const accessToken = generateAccessToken({
@@ -236,21 +257,29 @@ export class AuthService {
         return { accessToken };
       }
     } catch (error) {
-      throw new Error('Invalid or expired refresh token');
+      throw new Error("Invalid or expired refresh token");
     }
   }
 
   // Logout
-  async logout(refreshToken: string, role: 'SuperAdmin' | 'TenantAdmin' | 'TenantUser', tenantId?: string) {
-    if (role === 'SuperAdmin') {
+  async logout(
+    refreshToken: string,
+    role: "SuperAdmin" | "TenantAdmin" | "TenantUser",
+    tenantId?: string,
+  ) {
+    if (role === "SuperAdmin") {
       const db = getMainDb();
-      await db.delete(superAdminRefreshTokens).where(eq(superAdminRefreshTokens.token, refreshToken));
+      await db
+        .delete(superAdminRefreshTokens)
+        .where(eq(superAdminRefreshTokens.token, refreshToken));
     } else {
       if (!tenantId) {
-        throw new Error('Tenant ID required for tenant users');
+        throw new Error("Tenant ID required for tenant users");
       }
       const db = getTenantDb(tenantId);
-      await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken));
+      await db
+        .delete(refreshTokens)
+        .where(eq(refreshTokens.token, refreshToken));
     }
   }
 
@@ -265,7 +294,7 @@ export class AuthService {
       .limit(1);
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     const newPasswordHash = await hashPassword(newPassword);
@@ -280,7 +309,7 @@ export class AuthService {
       .where(eq(users.id, userId));
 
     return {
-      message: 'Password changed successfully',
+      message: "Password changed successfully",
     };
   }
 }

@@ -1,8 +1,12 @@
-import { Response, NextFunction } from 'express';
-import { UsersService } from './users.service';
-import { createUserSchema, updateUserSchema, activateUserSchema } from './users.validation';
-import { successResponse, errorResponse } from '../../utils/response';
-import { AuthRequest } from '../../types';
+import type { NextFunction, Response } from "express";
+import type { AuthRequest } from "../../types";
+import { errorResponse, successResponse } from "../../utils/response";
+import { UsersService } from "./users.service";
+import {
+  activateUserSchema,
+  createUserSchema,
+  updateUserSchema,
+} from "./users.validation";
 
 export class UsersController {
   private usersService: UsersService;
@@ -14,7 +18,12 @@ export class UsersController {
   getAllUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.tenant) {
-        return errorResponse(res, 'Tenant context required', 400, 'TENANT_CONTEXT_MISSING');
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
       }
 
       const users = await this.usersService.getAllUsers(req.tenant.tenantId);
@@ -27,7 +36,12 @@ export class UsersController {
   getUserById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.tenant) {
-        return errorResponse(res, 'Tenant context required', 400, 'TENANT_CONTEXT_MISSING');
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
       }
 
       const { id } = req.params;
@@ -41,7 +55,12 @@ export class UsersController {
   createUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.tenant) {
-        return errorResponse(res, 'Tenant context required', 400, 'TENANT_CONTEXT_MISSING');
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
       }
 
       const dto = createUserSchema.parse(req.body);
@@ -55,27 +74,49 @@ export class UsersController {
   updateUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.tenant) {
-        return errorResponse(res, 'Tenant context required', 400, 'TENANT_CONTEXT_MISSING');
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
       }
 
       const { id } = req.params;
       const dto = updateUserSchema.parse(req.body);
-      const user = await this.usersService.updateUser(req.tenant.tenantId, id, dto);
+      const user = await this.usersService.updateUser(
+        req.tenant.tenantId,
+        id,
+        dto,
+      );
       return successResponse(res, user);
     } catch (error: any) {
       next(error);
     }
   };
 
-  activateUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  activateUser = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       if (!req.tenant) {
-        return errorResponse(res, 'Tenant context required', 400, 'TENANT_CONTEXT_MISSING');
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
       }
 
       const { id } = req.params;
       const dto = activateUserSchema.parse(req.body);
-      const user = await this.usersService.activateUser(req.tenant.tenantId, id, dto);
+      const user = await this.usersService.activateUser(
+        req.tenant.tenantId,
+        id,
+        dto,
+      );
       return successResponse(res, user);
     } catch (error: any) {
       next(error);
@@ -85,11 +126,19 @@ export class UsersController {
   deleteUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.tenant) {
-        return errorResponse(res, 'Tenant context required', 400, 'TENANT_CONTEXT_MISSING');
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
       }
 
       const { id } = req.params;
-      const result = await this.usersService.deleteUser(req.tenant.tenantId, id);
+      const result = await this.usersService.deleteUser(
+        req.tenant.tenantId,
+        id,
+      );
       return successResponse(res, result);
     } catch (error: any) {
       next(error);
@@ -99,14 +148,27 @@ export class UsersController {
   getProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
-        return errorResponse(res, 'Authentication required', 401, 'UNAUTHORIZED');
+        return errorResponse(
+          res,
+          "Authentication required",
+          401,
+          "UNAUTHORIZED",
+        );
       }
 
       if (!req.tenant) {
-        return errorResponse(res, 'Tenant context required', 400, 'TENANT_CONTEXT_MISSING');
+        return errorResponse(
+          res,
+          "Tenant context required",
+          400,
+          "TENANT_CONTEXT_MISSING",
+        );
       }
 
-      const profile = await this.usersService.getProfile(req.tenant.tenantId, req.user.userId);
+      const profile = await this.usersService.getProfile(
+        req.tenant.tenantId,
+        req.user.userId,
+      );
       return successResponse(res, profile);
     } catch (error: any) {
       next(error);

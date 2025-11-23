@@ -1,7 +1,7 @@
-import helmet from 'helmet';
-import cors from 'cors';
-import rateLimit from 'express-rate-limit';
-import { env } from '../config/env';
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
+import { env } from "../config/env";
 
 export const helmetMiddleware = helmet({
   contentSecurityPolicy: {
@@ -18,10 +18,10 @@ export const helmetMiddleware = helmet({
 });
 
 export const corsMiddleware = cors({
-  origin: env.NODE_ENV === 'production' ? [] : '*',
+  origin: env.NODE_ENV === "production" ? [] : "*",
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Tenant-ID"],
 });
 
 export const rateLimiter = rateLimit({
@@ -30,8 +30,8 @@ export const rateLimiter = rateLimit({
   message: {
     success: false,
     error: {
-      message: 'Too many requests, please try again later.',
-      code: 'RATE_LIMIT_EXCEEDED',
+      message: "Too many requests, please try again later.",
+      code: "RATE_LIMIT_EXCEEDED",
     },
   },
   standardHeaders: true,

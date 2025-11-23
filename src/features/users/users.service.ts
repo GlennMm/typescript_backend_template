@@ -1,9 +1,13 @@
-import { eq } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
-import { getTenantDb } from '../../db/connection';
-import { users } from '../../db/schemas/tenant.schema';
-import { hashPassword } from '../../utils/password';
-import { CreateUserDto, UpdateUserDto, ActivateUserDto } from './users.validation';
+import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import { getTenantDb } from "../../db/connection";
+import { users } from "../../db/schemas/tenant.schema";
+import { hashPassword } from "../../utils/password";
+import type {
+  ActivateUserDto,
+  CreateUserDto,
+  UpdateUserDto,
+} from "./users.validation";
 
 export class UsersService {
   async getAllUsers(tenantId: string) {
@@ -43,7 +47,7 @@ export class UsersService {
       .limit(1);
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     return user;
@@ -60,7 +64,7 @@ export class UsersService {
       .limit(1);
 
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error("User with this email already exists");
     }
 
     const passwordHash = await hashPassword(dto.password);
@@ -98,7 +102,7 @@ export class UsersService {
       .limit(1);
 
     if (!existingUser) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // If email is being updated, check if it's already taken
@@ -110,7 +114,7 @@ export class UsersService {
         .limit(1);
 
       if (emailTaken) {
-        throw new Error('Email already in use');
+        throw new Error("Email already in use");
       }
     }
 
@@ -143,7 +147,7 @@ export class UsersService {
       .limit(1);
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     const [updatedUser] = await db
@@ -176,12 +180,12 @@ export class UsersService {
       .limit(1);
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     await db.delete(users).where(eq(users.id, userId));
 
-    return { message: 'User deleted successfully' };
+    return { message: "User deleted successfully" };
   }
 
   async getProfile(tenantId: string, userId: string) {
