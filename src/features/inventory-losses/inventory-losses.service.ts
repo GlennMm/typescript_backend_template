@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
-import { getTenantDb } from "@/db";
+import { getTenantDb } from "@/db/connection";
 import {
   inventoryLosses,
   inventoryLossItems,

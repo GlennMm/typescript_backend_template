@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, lte, or, sql } from "drizzle-orm";
-import { getTenantDb } from "@/db";
+import { getTenantDb } from "@/db/connection";
 import { auditLogs } from "@/db/schemas/tenant.schema";
 import { nanoid } from "nanoid";
 
@@ -253,9 +253,9 @@ export class AuditLogsService {
           lte(auditLogs.timestamp, beforeDate),
           eq(auditLogs.isArchived, false),
         ),
-      );
+      ).returning();
 
-    return { archived: result.changes || 0 };
+    return { archived: result.length || 0 };
   }
 
   /**
@@ -276,9 +276,9 @@ export class AuditLogsService {
           isArchived: false,
           archivedAt: null,
         })
-        .where(eq(auditLogs.id, logId));
+        .where(eq(auditLogs.id, logId)).returning();
 
-      unarchived += result.changes || 0;
+      unarchived += result.length || 0;
     }
 
     return { unarchived };

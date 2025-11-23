@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, lte, or, sql } from "drizzle-orm";
-import { getTenantDb } from "@/db";
+import { getTenantDb } from "@/db/connection";
 import {
   returns,
   returnItems,
@@ -579,12 +579,12 @@ export class ReturnsService {
             lossType: "breakage",
             reason: `Returned damaged item from return ${returnRecord.returnNumber}`,
             referenceNumber: returnRecord.returnNumber,
-            notes: item.conditionNotes,
+            notes: item.conditionNotes ?? "",
             items: [
               {
                 productId: item.productId,
                 quantity: item.quantity,
-                notes: item.conditionNotes,
+                notes: item.conditionNotes ?? "",
               },
             ],
           },

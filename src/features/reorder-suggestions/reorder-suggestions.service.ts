@@ -1,5 +1,5 @@
 import { and, desc, eq, isNull, lte, or, sql } from "drizzle-orm";
-import { getTenantDb } from "@/db";
+import { getTenantDb } from "@/db/connection";
 import {
   reorderSuggestions,
   branchInventory,
@@ -86,10 +86,10 @@ export class ReorderSuggestionsService {
 
       // Calculate suggested quantity
       // Simple formula: order enough to reach maximum stock (or double minimum if no max set)
-      const targetStock = item.maximumStock || item.minimumStock * 2;
+      const targetStock = item.maximumStock || (item.minimumStock ?? 0) * 2;
       const suggestedQuantity = Math.max(
         targetStock - item.currentStock,
-        item.minimumStock,
+        (item.minimumStock ?? 0),
       );
 
       // Create suggestion
@@ -100,7 +100,7 @@ export class ReorderSuggestionsService {
           branchId: item.branchId,
           productId: item.productId,
           currentStock: item.currentStock,
-          minimumStock: item.minimumStock,
+          minimumStock: (item.minimumStock ?? 0),
           suggestedQuantity,
           status: "pending",
           createdAt: new Date(),
