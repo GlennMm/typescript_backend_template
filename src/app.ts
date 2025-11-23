@@ -1,5 +1,7 @@
 import express from "express";
 import authRoutes from "./features/auth/auth.routes";
+import branchesRoutes from "./features/branches/branches.routes";
+import shopSettingsRoutes from "./features/shop-settings/shop-settings.routes";
 import tenantsRoutes from "./features/tenants/tenants.routes";
 import usersRoutes from "./features/users/users.routes";
 import { errorHandler } from "./middleware/errorHandler";
@@ -45,6 +47,8 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/tenants", tenantsRoutes);
+app.use("/api/shop/settings", shopSettingsRoutes);
+app.use("/api/branches", branchesRoutes);
 
 // 404 handler
 app.use((_req, res) => {
