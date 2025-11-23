@@ -1,6 +1,8 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import authRoutes from "./features/auth/auth.routes";
 import branchesRoutes from "./features/branches/branches.routes";
 import currenciesRoutes from "./features/currencies/currencies.routes";
@@ -29,6 +31,9 @@ import {
   rateLimiter,
 } from "./middleware/security";
 import logger from "./utils/logger";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -96,15 +101,14 @@ app.use("/api/payment-methods", paymentMethodsRoutes);
 app.use("/api/suppliers", suppliersRoutes);
 app.use("/api/taxes", taxesRoutes);
 
-// 404 handler
+// Serve static files from the React app
+const frontendDistPath = path.join(__dirname, "..", "frontend", "dist");
+app.use(express.static(frontendDistPath));
+
+// Handle React routing, return all requests to React app (except API routes)
+// Using middleware instead of app.get("*") for Express 5 compatibility
 app.use((_req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      message: "Route not found",
-      code: "NOT_FOUND",
-    },
-  });
+  res.sendFile(path.join(frontendDistPath, "index.html"));
 });
 
 // Error handler (must be last)
