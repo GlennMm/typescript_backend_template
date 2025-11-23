@@ -5,14 +5,14 @@ const options: OAS3Options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Multi-Branch POS System API",
+      title: "Matsware POS - Multi-Branch POS System API",
       version: "1.0.0",
       description:
         "Complete API documentation for the multi-branch Point of Sale system with inventory management, staff assignments, and customer tracking.",
       contact: {
         name: "API Support",
-        email: "support@example.com",
-      },
+        email: "matsiweglenn@gmail.com",
+      }
     },
     servers: [
       {

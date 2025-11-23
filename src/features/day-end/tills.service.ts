@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
-import { getTenantDb } from "@/db/tenant";
 import { branches, tills } from "@/db/schemas/tenant.schema";
 import { nanoid } from "nanoid";
+import { getTenantDb } from "@/db/connection";
 
 interface CreateTillDto {
   branchId: string;

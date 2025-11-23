@@ -1,5 +1,5 @@
 import { and, between, eq, sql } from "drizzle-orm";
-import { getTenantDb } from "@/db/tenant";
+import { getTenantDb } from "@/db/connection";
 import {
   dayEnds,
   dayEndShifts,

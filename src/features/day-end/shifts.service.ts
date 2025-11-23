@@ -1,5 +1,5 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { getTenantDb } from "@/db/tenant";
+import { getTenantDb } from "@/db/connection";
 import {
   shifts,
   tills,
