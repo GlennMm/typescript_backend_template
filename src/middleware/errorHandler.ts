@@ -23,7 +23,7 @@ export function errorHandler(
       "Validation failed",
       400,
       "VALIDATION_ERROR",
-      err.errors.map((e) => ({
+      err.issues.map((e) => ({
         path: e.path.join("."),
         message: e.message,
       })),
