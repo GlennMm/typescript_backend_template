@@ -502,3 +502,147 @@ export const productBranchTaxes = sqliteTable("product_branch_taxes", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+// Purchases - Branch-specific purchase orders from suppliers
+export const purchases = sqliteTable("purchases", {
+  id: text("id").primaryKey(),
+  poNumber: text("po_number").notNull().unique(), // Purchase Order Number
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  supplierId: text("supplier_id")
+    .notNull()
+    .references(() => suppliers.id, { onDelete: "set null" }),
+
+  // Dates
+  purchaseDate: integer("purchase_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  expectedDeliveryDate: integer("expected_delivery_date", {
+    mode: "timestamp",
+  }),
+  actualDeliveryDate: integer("actual_delivery_date", { mode: "timestamp" }),
+
+  // Reference & Notes
+  invoiceNumber: text("invoice_number"), // From supplier's receipt
+  notes: text("notes"),
+
+  // Costs
+  subtotal: real("subtotal").notNull().default(0), // Sum of line items
+  shippingCost: real("shipping_cost").default(0),
+  taxApplied: integer("tax_applied", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  taxAmount: real("tax_amount").default(0),
+  total: real("total").notNull().default(0), // subtotal + shipping + tax
+
+  // Payment tracking
+  amountPaid: real("amount_paid").notNull().default(0), // Sum of payments in base currency
+  amountDue: real("amount_due").notNull().default(0), // total - amountPaid
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "submitted", "partially_paid", "fully_paid", "received"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Purchase Items - Line items for each purchase
+export const purchaseItems = sqliteTable("purchase_items", {
+  id: text("id").primaryKey(),
+  purchaseId: text("purchase_id")
+    .notNull()
+    .references(() => purchases.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+
+  // Quantities
+  quantity: real("quantity").notNull(),
+  quantityReceived: real("quantity_received").notNull().default(0),
+
+  // Pricing
+  currentCostPrice: real("current_cost_price").notNull(), // Snapshot at creation
+  totalAmount: real("total_amount").notNull(), // User enters (total for this line)
+  newCostPrice: real("new_cost_price").notNull(), // Calculated: totalAmount / quantity
+
+  // Notes
+  notes: text("notes"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Purchase Payments - Multiple payments per purchase
+export const purchasePayments = sqliteTable("purchase_payments", {
+  id: text("id").primaryKey(),
+  purchaseId: text("purchase_id")
+    .notNull()
+    .references(() => purchases.id, { onDelete: "cascade" }),
+
+  // Payment details
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+
+  // Exchange rate snapshot at payment time
+  exchangeRate: real("exchange_rate").notNull(), // Snapshot from currencies table
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(), // amount * exchangeRate
+
+  // Reference & notes
+  referenceNumber: text("reference_number"),
+  paymentDate: integer("payment_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Product Cost History - Audit trail of cost price changes
+export const productCostHistory = sqliteTable("product_cost_history", {
+  id: text("id").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  purchaseId: text("purchase_id").references(() => purchases.id, {
+    onDelete: "set null",
+  }),
+
+  oldCostPrice: real("old_cost_price").notNull(),
+  newCostPrice: real("new_cost_price").notNull(),
+
+  changedBy: text("changed_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  changedAt: integer("changed_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+

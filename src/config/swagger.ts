@@ -324,6 +324,34 @@ const options: OAS3Options = {
             updatedAt: { type: "string", format: "date-time" },
           },
         },
+        Purchase: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            poNumber: { type: "string", example: "PO2025-00001" },
+            branchId: { type: "string" },
+            supplierId: { type: "string" },
+            purchaseDate: { type: "string", format: "date-time" },
+            expectedDeliveryDate: { type: "string", format: "date-time" },
+            actualDeliveryDate: { type: "string", format: "date-time" },
+            invoiceNumber: { type: "string" },
+            notes: { type: "string" },
+            subtotal: { type: "number" },
+            shippingCost: { type: "number" },
+            taxApplied: { type: "boolean" },
+            taxAmount: { type: "number" },
+            total: { type: "number" },
+            amountPaid: { type: "number" },
+            amountDue: { type: "number" },
+            status: {
+              type: "string",
+              enum: ["draft", "submitted", "partially_paid", "fully_paid", "received"]
+            },
+            createdBy: { type: "string" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
       },
     },
     security: [
@@ -359,6 +387,10 @@ const options: OAS3Options = {
       {
         name: "Stock Takes",
         description: "Physical inventory counts with multi-stage approval workflow",
+      },
+      {
+        name: "Purchases",
+        description: "Supplier purchase orders with multi-currency payments and goods receiving",
       },
       {
         name: "Transfers",
