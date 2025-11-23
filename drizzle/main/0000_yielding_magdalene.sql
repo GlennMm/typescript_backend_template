@@ -7,6 +7,7 @@ CREATE TABLE `subscription_plans` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `subscription_plans_name_unique` ON `subscription_plans` (`name`);--> statement-breakpoint
 CREATE TABLE `super_admin_refresh_tokens` (
 	`id` text PRIMARY KEY NOT NULL,
 	`super_admin_id` text NOT NULL,
@@ -16,6 +17,7 @@ CREATE TABLE `super_admin_refresh_tokens` (
 	FOREIGN KEY (`super_admin_id`) REFERENCES `super_admins`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `super_admin_refresh_tokens_token_unique` ON `super_admin_refresh_tokens` (`token`);--> statement-breakpoint
 CREATE TABLE `super_admins` (
 	`id` text PRIMARY KEY NOT NULL,
 	`email` text NOT NULL,
@@ -26,6 +28,7 @@ CREATE TABLE `super_admins` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `super_admins_email_unique` ON `super_admins` (`email`);--> statement-breakpoint
 CREATE TABLE `tenants` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -43,7 +46,4 @@ CREATE TABLE `tenants` (
 	FOREIGN KEY (`subscription_plan_id`) REFERENCES `subscription_plans`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `subscription_plans_name_unique` ON `subscription_plans` (`name`);--> statement-breakpoint
-CREATE UNIQUE INDEX `super_admin_refresh_tokens_token_unique` ON `super_admin_refresh_tokens` (`token`);--> statement-breakpoint
-CREATE UNIQUE INDEX `super_admins_email_unique` ON `super_admins` (`email`);--> statement-breakpoint
 CREATE UNIQUE INDEX `tenants_slug_unique` ON `tenants` (`slug`);

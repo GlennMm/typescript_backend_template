@@ -150,5 +150,6 @@ data/
 # IDE
 .vscode/
 .idea/
+.marscode/
 *.swp
 *.swo

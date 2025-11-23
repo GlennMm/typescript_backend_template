@@ -1,7 +1,7 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "38a932d8-5d8f-4f19-84bd-9459a5f4721d",
+  "id": "36287b7d-0edc-40f1-9c31-2a907c4b2575",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "subscription_plans": {
@@ -63,7 +63,8 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "super_admin_refresh_tokens": {
       "name": "super_admin_refresh_tokens",
@@ -130,7 +131,8 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "super_admins": {
       "name": "super_admins",
@@ -199,7 +201,8 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "tenants": {
       "name": "tenants",
@@ -325,13 +328,18 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
+  "views": {},
   "enums": {},
   "_meta": {
     "schemas": {},
     "tables": {},
     "columns": {}
+  },
+  "internal": {
+    "indexes": {}
   }
 }

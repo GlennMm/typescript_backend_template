@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { env } from "../../config/env";
 import { createTenantDb, getMainDb } from "../../db/connection";
+import { seedTenantData } from "../../db/tenant-seed";
 import { subscriptionPlans, tenants } from "../../db/schemas/main.schema";
 import { users } from "../../db/schemas/tenant.schema";
 import { generateOTP, getOTPExpiration, hashOTP } from "../../utils/otp";
@@ -119,6 +120,9 @@ export class TenantsService {
 
     // Create tenant database
     const tenantDb = createTenantDb(tenantId);
+
+    // Seed common tenant data (currencies, payment methods, taxes, default category)
+    await seedTenantData(tenantId);
 
     // Generate OTP for tenant admin instead of using provided password
     const otp = generateOTP(8); // 8-character alphanumeric OTP

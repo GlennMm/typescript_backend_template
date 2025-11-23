@@ -1,0 +1,78 @@
+CREATE TABLE `return_items` (
+	`id` text PRIMARY KEY NOT NULL,
+	`return_id` text NOT NULL,
+	`sale_item_id` text,
+	`layby_item_id` text,
+	`quotation_item_id` text,
+	`product_id` text NOT NULL,
+	`quantity` real NOT NULL,
+	`price` real NOT NULL,
+	`condition` text DEFAULT 'good' NOT NULL,
+	`condition_notes` text,
+	`inventory_loss_id` text,
+	`refund_amount` real NOT NULL,
+	`notes` text,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`return_id`) REFERENCES `returns`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`sale_item_id`) REFERENCES `sale_items`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`layby_item_id`) REFERENCES `layby_items`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`quotation_item_id`) REFERENCES `quotation_items`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`inventory_loss_id`) REFERENCES `inventory_losses`(`id`) ON UPDATE no action ON DELETE set null
+);
+--> statement-breakpoint
+CREATE TABLE `return_refunds` (
+	`id` text PRIMARY KEY NOT NULL,
+	`return_id` text NOT NULL,
+	`amount` real NOT NULL,
+	`currency_id` text NOT NULL,
+	`payment_method_id` text NOT NULL,
+	`exchange_rate` real NOT NULL,
+	`amount_in_base_currency` real NOT NULL,
+	`shift_id` text,
+	`reference_number` text,
+	`refund_date` integer DEFAULT (unixepoch()) NOT NULL,
+	`notes` text,
+	`created_by` text NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`return_id`) REFERENCES `returns`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`currency_id`) REFERENCES `currencies`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`shift_id`) REFERENCES `shifts`(`id`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
+);
+--> statement-breakpoint
+CREATE TABLE `returns` (
+	`id` text PRIMARY KEY NOT NULL,
+	`return_number` text NOT NULL,
+	`branch_id` text NOT NULL,
+	`sale_id` text,
+	`layby_id` text,
+	`quotation_id` text,
+	`customer_id` text NOT NULL,
+	`reason` text NOT NULL,
+	`notes` text,
+	`total_amount` real DEFAULT 0 NOT NULL,
+	`total_refunded` real DEFAULT 0 NOT NULL,
+	`status` text DEFAULT 'draft' NOT NULL,
+	`return_date` integer DEFAULT (unixepoch()) NOT NULL,
+	`created_by` text NOT NULL,
+	`approved_by` text,
+	`approved_at` integer,
+	`processed_by` text,
+	`processed_at` integer,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`sale_id`) REFERENCES `sales`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`layby_id`) REFERENCES `laybys`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`quotation_id`) REFERENCES `quotations`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY (`approved_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY (`processed_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `returns_return_number_unique` ON `returns` (`return_number`);--> statement-breakpoint
+ALTER TABLE `branch_settings` ADD `return_window_days` integer DEFAULT 30;
