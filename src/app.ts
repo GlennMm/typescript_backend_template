@@ -1,5 +1,25 @@
 import express from "express";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 import authRoutes from "./features/auth/auth.routes";
+import branchesRoutes from "./features/branches/branches.routes";
+import currenciesRoutes from "./features/currencies/currencies.routes";
+import customersRoutes from "./features/customers/customers.routes";
+import inventoryRoutes from "./features/inventory/inventory.routes";
+import paymentMethodsRoutes from "./features/payment-methods/payment-methods.routes";
+import productsRoutes from "./features/products/products.routes";
+import purchasesRoutes from "./features/purchases/purchases.routes";
+import salesRoutes from "./features/sales/sales.routes";
+import shopSettingsRoutes from "./features/shop-settings/shop-settings.routes";
+import stockTakesRoutes from "./features/stock-takes/stock-takes.routes";
+import dayEndRoutes from "./features/day-end/day-end.routes";
+import expensesRoutes from "./features/expenses/expenses.routes";
+import inventoryLossesRoutes from "./features/inventory-losses/inventory-losses.routes";
+import returnsRoutes from "./features/returns/returns.routes";
+import reorderSuggestionsRoutes from "./features/reorder-suggestions/reorder-suggestions.routes";
+import auditLogsRoutes from "./features/audit-logs/audit-logs.routes";
+import suppliersRoutes from "./features/suppliers/suppliers.routes";
+import taxesRoutes from "./features/taxes/taxes.routes";
 import tenantsRoutes from "./features/tenants/tenants.routes";
 import usersRoutes from "./features/users/users.routes";
 import { errorHandler } from "./middleware/errorHandler";
@@ -41,10 +61,40 @@ app.get("/health", (_req, res) => {
   });
 });
 
+// API Documentation
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "POS API Documentation",
+}));
+
+// Swagger JSON endpoint
+app.get("/api/docs.json", (_req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
+
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/tenants", tenantsRoutes);
+app.use("/api/shop/settings", shopSettingsRoutes);
+app.use("/api/branches", branchesRoutes);
+app.use("/api/products", productsRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/stock-takes", stockTakesRoutes);
+app.use("/api/purchases", purchasesRoutes);
+app.use("/api/sales", salesRoutes);
+app.use("/api/day-end", dayEndRoutes);
+app.use("/api/expenses", expensesRoutes);
+app.use("/api/inventory-losses", inventoryLossesRoutes);
+app.use("/api/returns", returnsRoutes);
+app.use("/api/reorder-suggestions", reorderSuggestionsRoutes);
+app.use("/api/audit-logs", auditLogsRoutes);
+app.use("/api/customers", customersRoutes);
+app.use("/api/currencies", currenciesRoutes);
+app.use("/api/payment-methods", paymentMethodsRoutes);
+app.use("/api/suppliers", suppliersRoutes);
+app.use("/api/taxes", taxesRoutes);
 
 // 404 handler
 app.use((_req, res) => {

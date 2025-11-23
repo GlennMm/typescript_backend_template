@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
-    "db:generate:main": "drizzle-kit generate:sqlite --config=drizzle.config.ts",
-    "db:generate:tenant": "drizzle-kit generate:sqlite --config=drizzle.tenant.config.ts",
+    "db:generate:main": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:generate:tenant": "drizzle-kit generate --config=drizzle.tenant.config.ts",
     "db:generate": "bun run db:generate:main && bun run db:generate:tenant",
     "db:migrate": "bun src/db/migrate.ts",
     "db:seed": "bun src/db/seed.ts",
@@ -30,6 +30,8 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "nanoid": "^5.1.6",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "winston": "^3.18.3",
     "zod": "^4.1.12"
   },
@@ -40,6 +42,8 @@
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/supertest": "^6.0.3",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "bun-types": "latest",
     "drizzle-kit": "^0.31.7",
     "supertest": "^7.1.4",

@@ -1,16 +1,153 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+// Shop Settings - Tenant-wide business details
+export const shopSettings = sqliteTable("shop_settings", {
+  id: text("id").primaryKey(),
+
+  // Company Information
+  companyName: text("company_name").notNull(),
+  tradingName: text("trading_name"),
+
+  // Tax & Legal
+  vatNumber: text("vat_number"),
+  tinNumber: text("tin_number"),
+  businessRegistrationNumber: text("business_registration_number"),
+  defaultTaxRate: real("default_tax_rate").notNull().default(0),
+
+  // Headquarters Address
+  addressLine1: text("address_line1").notNull(),
+  addressLine2: text("address_line2"),
+  city: text("city").notNull(),
+  stateProvince: text("state_province"),
+  postalCode: text("postal_code").notNull(),
+  country: text("country").notNull(),
+
+  // Contact
+  phoneNumber: text("phone_number").notNull(),
+  alternativePhone: text("alternative_phone"),
+  email: text("email").notNull(),
+  faxNumber: text("fax_number"),
+  website: text("website"),
+
+  // Business Defaults
+  defaultCurrency: text("default_currency").notNull().default("USD"),
+  defaultTimezone: text("default_timezone"),
+
+  // Branding
+  logoUrl: text("logo_url"),
+  defaultReceiptHeader: text("default_receipt_header"),
+  defaultReceiptFooter: text("default_receipt_footer"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Branches - Shop locations with inheritance capability
+export const branches = sqliteTable("branches", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+
+  // Inheritance Flags
+  useShopVat: integer("use_shop_vat", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  useShopTin: integer("use_shop_tin", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  useShopBusinessReg: integer("use_shop_business_reg", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  useShopTaxRate: integer("use_shop_tax_rate", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  useShopAddress: integer("use_shop_address", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  useShopContact: integer("use_shop_contact", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  useShopCurrency: integer("use_shop_currency", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  useShopReceipts: integer("use_shop_receipts", { mode: "boolean" })
+    .notNull()
+    .default(true),
+
+  // Tax & Legal (Branch-specific)
+  vatNumber: text("vat_number"),
+  tinNumber: text("tin_number"),
+  businessRegistrationNumber: text("business_registration_number"),
+  taxRate: real("tax_rate"),
+
+  // Address (Branch-specific)
+  addressLine1: text("address_line1"),
+  addressLine2: text("address_line2"),
+  city: text("city"),
+  stateProvince: text("state_province"),
+  postalCode: text("postal_code"),
+  country: text("country"),
+
+  // Contact (Branch-specific)
+  phoneNumber: text("phone_number"),
+  alternativePhone: text("alternative_phone"),
+  email: text("email"),
+  faxNumber: text("fax_number"),
+
+  // Settings
+  currency: text("currency"),
+  timezone: text("timezone"),
+  openingHours: text("opening_hours", { mode: "json" }), // JSON object
+
+  // Branding
+  receiptHeader: text("receipt_header"),
+  receiptFooter: text("receipt_footer"),
+  logoUrl: text("logo_url"),
+
+  // Management
+  managerId: text("manager_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Users - Extended with branch assignment and new roles
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
 
-  // Role: TenantAdmin or TenantUser
-  role: text("role", { enum: ["TenantAdmin", "TenantUser"] })
+  // Role: Extended for POS system
+  role: text("role", {
+    enum: [
+      "TenantAdmin",
+      "TenantUser",
+      "ShopOwner",
+      "BranchManager",
+      "Supervisor",
+      "Cashier",
+    ],
+  })
     .notNull()
     .default("TenantUser"),
+
+  // Primary Branch Assignment
+  primaryBranchId: text("primary_branch_id").references(() => branches.id, {
+    onDelete: "set null",
+  }),
 
   // Activation
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(false),
@@ -31,6 +168,29 @@ export const users = sqliteTable("users", {
     .default(sql`(unixepoch())`),
 });
 
+// Staff Assignments - Track staff-branch relationships
+export const staffAssignments = sqliteTable("staff_assignments", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Role at this specific branch (optional, can inherit from user.role)
+  roleAtBranch: text("role_at_branch", {
+    enum: ["BranchManager", "Supervisor", "Cashier"],
+  }),
+
+  assignedAt: integer("assigned_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  assignedBy: text("assigned_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+});
+
 export const refreshTokens = sqliteTable("refresh_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id")
@@ -42,3 +202,1577 @@ export const refreshTokens = sqliteTable("refresh_tokens", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+// Product Categories - For organizing products
+export const productCategories = sqliteTable("product_categories", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  parentId: text("parent_id").references((): any => productCategories.id, {
+    onDelete: "set null",
+  }),
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  detail: text("detail"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Products - Tenant-wide product catalog
+export const products = sqliteTable("products", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  sku: text("sku").notNull().unique(),
+  barcode: text("barcode"),
+  categoryId: text("category_id").references(() => productCategories.id, {
+    onDelete: "set null",
+  }),
+  description: text("description"),
+  price: real("price").notNull(),
+  cost: real("cost"),
+  unit: text("unit").notNull().default("piece"), // piece, kg, liter, etc.
+  imageUrl: text("image_url"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Branch Inventory - Stock levels per branch
+export const branchInventory = sqliteTable("branch_inventory", {
+  id: text("id").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  quantity: real("quantity").notNull().default(0),
+  minimumStock: real("minimum_stock").default(0), // For low stock alerts
+  maximumStock: real("maximum_stock"),
+  lastRestocked: integer("last_restocked", { mode: "timestamp" }),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Inventory Transfers - Track stock movement between branches
+export const inventoryTransfers = sqliteTable("inventory_transfers", {
+  id: text("id").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  fromBranchId: text("from_branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  toBranchId: text("to_branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  quantity: real("quantity").notNull(),
+  status: text("status", {
+    enum: ["pending", "approved", "rejected", "completed"],
+  })
+    .notNull()
+    .default("pending"),
+  notes: text("notes"),
+  requestedBy: text("requested_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  requestedAt: integer("requested_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
+});
+
+// Stock Takes - Physical inventory counts per branch
+export const stockTakes = sqliteTable("stock_takes", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  status: text("status", {
+    enum: ["initialized", "started", "counted", "approved", "rejected"],
+  })
+    .notNull()
+    .default("initialized"),
+
+  // Audit trail
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  startedBy: text("started_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  countedBy: text("counted_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+
+  // Timestamps
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  startedAt: integer("started_at", { mode: "timestamp" }),
+  countedAt: integer("counted_at", { mode: "timestamp" }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+
+  // Rejection handling
+  rejectionNotes: text("rejection_notes"),
+
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Stock Take Items - Individual product counts in a stock take
+export const stockTakeItems = sqliteTable("stock_take_items", {
+  id: text("id").primaryKey(),
+  stockTakeId: text("stock_take_id")
+    .notNull()
+    .references(() => stockTakes.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+
+  // Quantities
+  expectedQuantity: real("expected_quantity").notNull(), // Snapshot at creation
+  actualQuantity: real("actual_quantity"), // Physical count
+  variance: real("variance"), // actualQuantity - expectedQuantity
+
+  // Item notes
+  notes: text("notes"), // Discrepancy reason
+
+  // Audit
+  countedBy: text("counted_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  countedAt: integer("counted_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Customers - Tenant-wide customer records
+export const customers = sqliteTable("customers", {
+  id: text("id").primaryKey(),
+
+  // Name fields
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  name: text("name").notNull(), // Full name (for sales feature)
+
+  // Customer type & tax info
+  customerType: text("customer_type", {
+    enum: ["individual", "business"],
+  })
+    .notNull()
+    .default("individual"),
+  vatNumber: text("vat_number"),
+  tinNumber: text("tin_number"),
+
+  // Contact
+  email: text("email"),
+  phone: text("phone"),
+  address: text("address"),
+
+  // Branch association (for walk-in customers)
+  branchId: text("branch_id").references(() => branches.id, {
+    onDelete: "cascade",
+  }),
+  isWalkIn: integer("is_walk_in", { mode: "boolean" })
+    .notNull()
+    .default(false),
+
+  // Additional fields
+  dateOfBirth: integer("date_of_birth", { mode: "timestamp" }),
+  loyaltyPoints: integer("loyalty_points").default(0),
+  lastPurchaseAt: integer("last_purchase_at", { mode: "timestamp" }),
+
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Currencies - Tenant-wide currency management
+export const currencies = sqliteTable("currencies", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(), // USD, EUR, GBP, etc.
+  symbol: text("symbol").notNull(), // $, €, £, etc.
+  exchangeRate: real("exchange_rate").notNull().default(1), // Relative to base currency
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false), // Only ONE can be default
+  detail: text("detail"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Payment Methods - Tenant-wide payment method templates
+export const paymentMethods = sqliteTable("payment_methods", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(), // Cash, Credit Card, Mobile Money, etc.
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false), // Multiple can be default
+  detail: text("detail"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Branch Payment Methods - Branch-specific payment methods (visible only to that branch)
+export const branchPaymentMethods = sqliteTable("branch_payment_methods", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Link to tenant-wide payment method (nullable for branch-created methods)
+  paymentMethodId: text("payment_method_id").references(
+    () => paymentMethods.id,
+    { onDelete: "cascade" },
+  ),
+
+  // Branch-specific name (used when paymentMethodId is null)
+  name: text("name"),
+  detail: text("detail"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Suppliers - Tenant-wide supplier records
+export const suppliers = sqliteTable("suppliers", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
+  vatNumber: text("vat_number"),
+  tinNumber: text("tin_number"),
+  contactPerson: text("contact_person"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Taxes - Tenant-wide tax definitions (branches inherit, cannot modify)
+export const taxes = sqliteTable("taxes", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(), // VAT, Sales Tax, etc.
+  taxRate: real("tax_rate").notNull(), // e.g., 15.0 for 15%
+  taxCode: text("tax_code"), // e.g., VAT001
+  taxID: text("tax_id"), // External tax identifier
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Product Branch Taxes - Which taxes apply to which products at which branches
+export const productBranchTaxes = sqliteTable("product_branch_taxes", {
+  id: text("id").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  taxId: text("tax_id")
+    .notNull()
+    .references(() => taxes.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Purchases - Branch-specific purchase orders from suppliers
+export const purchases = sqliteTable("purchases", {
+  id: text("id").primaryKey(),
+  poNumber: text("po_number").notNull().unique(), // Purchase Order Number
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  supplierId: text("supplier_id")
+    .notNull()
+    .references(() => suppliers.id, { onDelete: "set null" }),
+
+  // Dates
+  purchaseDate: integer("purchase_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  expectedDeliveryDate: integer("expected_delivery_date", {
+    mode: "timestamp",
+  }),
+  actualDeliveryDate: integer("actual_delivery_date", { mode: "timestamp" }),
+
+  // Reference & Notes
+  invoiceNumber: text("invoice_number"), // From supplier's receipt
+  notes: text("notes"),
+
+  // Costs
+  subtotal: real("subtotal").notNull().default(0), // Sum of line items
+  shippingCost: real("shipping_cost").default(0),
+  taxApplied: integer("tax_applied", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  taxAmount: real("tax_amount").default(0),
+  total: real("total").notNull().default(0), // subtotal + shipping + tax
+
+  // Payment tracking
+  amountPaid: real("amount_paid").notNull().default(0), // Sum of payments in base currency
+  amountDue: real("amount_due").notNull().default(0), // total - amountPaid
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "submitted", "partially_paid", "fully_paid", "received"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Purchase Items - Line items for each purchase
+export const purchaseItems = sqliteTable("purchase_items", {
+  id: text("id").primaryKey(),
+  purchaseId: text("purchase_id")
+    .notNull()
+    .references(() => purchases.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+
+  // Quantities
+  quantity: real("quantity").notNull(),
+  quantityReceived: real("quantity_received").notNull().default(0),
+
+  // Pricing
+  currentCostPrice: real("current_cost_price").notNull(), // Snapshot at creation
+  totalAmount: real("total_amount").notNull(), // User enters (total for this line)
+  newCostPrice: real("new_cost_price").notNull(), // Calculated: totalAmount / quantity
+
+  // Notes
+  notes: text("notes"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Purchase Payments - Multiple payments per purchase
+export const purchasePayments = sqliteTable("purchase_payments", {
+  id: text("id").primaryKey(),
+  purchaseId: text("purchase_id")
+    .notNull()
+    .references(() => purchases.id, { onDelete: "cascade" }),
+
+  // Payment details
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+
+  // Exchange rate snapshot at payment time
+  exchangeRate: real("exchange_rate").notNull(), // Snapshot from currencies table
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(), // amount * exchangeRate
+
+  // Reference & notes
+  referenceNumber: text("reference_number"),
+  paymentDate: integer("payment_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Product Cost History - Audit trail of cost price changes
+export const productCostHistory = sqliteTable("product_cost_history", {
+  id: text("id").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  purchaseId: text("purchase_id").references(() => purchases.id, {
+    onDelete: "set null",
+  }),
+
+  oldCostPrice: real("old_cost_price").notNull(),
+  newCostPrice: real("new_cost_price").notNull(),
+
+  changedBy: text("changed_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  changedAt: integer("changed_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Tenant Settings - Sales-related settings at tenant level
+export const tenantSettings = sqliteTable("tenant_settings", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(), // Reference to main DB tenant
+
+  // Quotation settings
+  quotationValidityDays: integer("quotation_validity_days")
+    .notNull()
+    .default(30),
+
+  // Tax settings
+  taxMode: text("tax_mode", {
+    enum: ["inclusive", "exclusive"],
+  })
+    .notNull()
+    .default("exclusive"),
+  taxRate: real("tax_rate").notNull().default(0), // e.g., 15 for 15%
+
+  // Layby settings
+  laybyFee: real("layby_fee").notNull().default(0),
+  cancellationFee: real("cancellation_fee").notNull().default(0),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Branch Settings - Branch-level overrides for sales settings
+export const branchSettings = sqliteTable("branch_settings", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" })
+    .unique(),
+
+  // Quotation settings (override tenant)
+  quotationValidityDays: integer("quotation_validity_days"), // null = inherit from tenant
+
+  // Layby settings (override tenant)
+  laybyDeposit: real("layby_deposit"), // Fixed amount deposit
+  cancellationFee: real("cancellation_fee"), // null = inherit from tenant
+
+  // Return settings
+  returnWindowDays: integer("return_window_days").default(30), // Number of days allowed for returns
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Branch Discounts - Named discounts per branch
+export const branchDiscounts = sqliteTable("branch_discounts", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // e.g., "Senior Citizen", "Wholesale"
+  percentage: real("percentage").notNull(), // e.g., 10 for 10%
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Sales - Credit sales and till sales
+export const sales = sqliteTable("sales", {
+  id: text("id").primaryKey(),
+  invoiceNumber: text("invoice_number").notNull().unique(), // INV2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "restrict" }),
+
+  // Sale type
+  saleType: text("sale_type", {
+    enum: ["credit", "till"],
+  })
+    .notNull()
+    .default("credit"),
+
+  // Dates
+  saleDate: integer("sale_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+
+  // Amounts
+  subtotal: real("subtotal").notNull().default(0), // Sum of line items (after line discounts)
+  saleDiscountId: text("sale_discount_id").references(
+    () => branchDiscounts.id,
+    { onDelete: "set null" },
+  ),
+  saleDiscountPercentage: real("sale_discount_percentage").default(0), // Snapshot
+  discountAmount: real("discount_amount").default(0), // subtotal * saleDiscountPercentage / 100
+  taxMode: text("tax_mode", {
+    enum: ["inclusive", "exclusive"],
+  }).notNull(), // Snapshot from tenant settings
+  taxRate: real("tax_rate").notNull(), // Snapshot
+  taxAmount: real("tax_amount").notNull().default(0),
+  total: real("total").notNull().default(0), // Final amount
+
+  // Payment tracking (for credit sales)
+  amountPaid: real("amount_paid").notNull().default(0), // Sum in base currency
+  amountDue: real("amount_due").notNull().default(0), // total - amountPaid
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "confirmed", "partially_paid", "fully_paid", "delivered", "completed"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Sale Items - Line items for sales
+export const saleItems = sqliteTable("sale_items", {
+  id: text("id").primaryKey(),
+  saleId: text("sale_id")
+    .notNull()
+    .references(() => sales.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+
+  quantity: real("quantity").notNull(),
+  price: real("price").notNull(), // Snapshot from product
+
+  // Line-level discount
+  discountId: text("discount_id").references(() => branchDiscounts.id, {
+    onDelete: "set null",
+  }),
+  discountPercentage: real("discount_percentage").default(0), // Snapshot
+  discountAmount: real("discount_amount").default(0), // (price * quantity) * discountPercentage / 100
+  lineTotal: real("line_total").notNull(), // (price * quantity) - discountAmount
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Quotations - Sales quotations
+export const quotations = sqliteTable("quotations", {
+  id: text("id").primaryKey(),
+  quotationNumber: text("quotation_number").notNull().unique(), // QT2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "restrict" }),
+
+  // Dates
+  quotationDate: integer("quotation_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  validityDays: integer("validity_days").notNull(), // Snapshot from settings
+  expiryDate: integer("expiry_date", { mode: "timestamp" }).notNull(), // Calculated
+
+  // Amounts
+  subtotal: real("subtotal").notNull().default(0),
+  saleDiscountId: text("sale_discount_id").references(
+    () => branchDiscounts.id,
+    { onDelete: "set null" },
+  ),
+  saleDiscountPercentage: real("sale_discount_percentage").default(0),
+  discountAmount: real("discount_amount").default(0),
+  taxMode: text("tax_mode", {
+    enum: ["inclusive", "exclusive"],
+  }).notNull(),
+  taxRate: real("tax_rate").notNull(),
+  taxAmount: real("tax_amount").notNull().default(0),
+  total: real("total").notNull().default(0),
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "sent", "accepted", "rejected", "expired"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Conversion tracking
+  convertedToSaleId: text("converted_to_sale_id").references(() => sales.id, {
+    onDelete: "set null",
+  }),
+  convertedToLaybyId: text("converted_to_layby_id").references(
+    (): any => laybys.id,
+    { onDelete: "set null" },
+  ),
+  convertedAt: integer("converted_at", { mode: "timestamp" }),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  sentBy: text("sent_by").references(() => users.id, { onDelete: "set null" }),
+  sentAt: integer("sent_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Quotation Items - Line items for quotations
+export const quotationItems = sqliteTable("quotation_items", {
+  id: text("id").primaryKey(),
+  quotationId: text("quotation_id")
+    .notNull()
+    .references(() => quotations.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+
+  quantity: real("quantity").notNull(),
+  price: real("price").notNull(),
+
+  // Line-level discount
+  discountId: text("discount_id").references(() => branchDiscounts.id, {
+    onDelete: "set null",
+  }),
+  discountPercentage: real("discount_percentage").default(0),
+  discountAmount: real("discount_amount").default(0),
+  lineTotal: real("line_total").notNull(),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Laybys - Layaway sales
+export const laybys = sqliteTable("laybys", {
+  id: text("id").primaryKey(),
+  laybyNumber: text("layby_number").notNull().unique(), // LB2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "restrict" }),
+
+  // Dates
+  laybyDate: integer("layby_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  collectedAt: integer("collected_at", { mode: "timestamp" }),
+  cancelledAt: integer("cancelled_at", { mode: "timestamp" }),
+
+  // Amounts
+  subtotal: real("subtotal").notNull().default(0),
+  saleDiscountId: text("sale_discount_id").references(
+    () => branchDiscounts.id,
+    { onDelete: "set null" },
+  ),
+  saleDiscountPercentage: real("sale_discount_percentage").default(0),
+  discountAmount: real("discount_amount").default(0),
+  taxMode: text("tax_mode", {
+    enum: ["inclusive", "exclusive"],
+  }).notNull(),
+  taxRate: real("tax_rate").notNull(),
+  taxAmount: real("tax_amount").notNull().default(0),
+  total: real("total").notNull().default(0),
+
+  // Deposit & payment tracking
+  depositRequired: real("deposit_required").notNull(), // Snapshot from settings
+  amountPaid: real("amount_paid").notNull().default(0),
+  amountDue: real("amount_due").notNull().default(0),
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "active", "partially_paid", "fully_paid", "collected", "cancelled"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Cancellation
+  cancellationFee: real("cancellation_fee"), // Snapshot from settings
+  cancellationReason: text("cancellation_reason"),
+  cancelledBy: text("cancelled_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Layby Items - Line items for laybys
+export const laybyItems = sqliteTable("layby_items", {
+  id: text("id").primaryKey(),
+  laybyId: text("layby_id")
+    .notNull()
+    .references(() => laybys.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+
+  quantity: real("quantity").notNull(),
+  price: real("price").notNull(),
+
+  // Stock reservation tracking
+  stockReserved: integer("stock_reserved", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  stockReservedAt: integer("stock_reserved_at", { mode: "timestamp" }),
+
+  // Line-level discount
+  discountId: text("discount_id").references(() => branchDiscounts.id, {
+    onDelete: "set null",
+  }),
+  discountPercentage: real("discount_percentage").default(0),
+  discountAmount: real("discount_amount").default(0),
+  lineTotal: real("line_total").notNull(),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Payments - Payments for sales and laybys with receipt numbers
+export const payments = sqliteTable("payments", {
+  id: text("id").primaryKey(),
+  receiptNumber: text("receipt_number").notNull().unique(), // RCP2025-00001
+
+  // Link to sale or layby
+  saleId: text("sale_id").references(() => sales.id, { onDelete: "cascade" }),
+  laybyId: text("layby_id").references(() => laybys.id, {
+    onDelete: "cascade",
+  }),
+  shiftId: text("shift_id").references((): any => shifts.id, {
+    onDelete: "set null",
+  }), // Track which shift processed this payment
+
+  // Payment details
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+
+  // Exchange rate snapshot
+  exchangeRate: real("exchange_rate").notNull(),
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(), // amount * exchangeRate
+
+  // Reference & notes
+  referenceNumber: text("reference_number"),
+  paymentDate: integer("payment_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Tills - Register tills per branch
+export const tills = sqliteTable("tills", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  tillNumber: text("till_number").notNull(), // e.g., "TILL-001"
+  name: text("name").notNull(), // e.g., "Cashier Station 1"
+
+  // Device registration
+  deviceId: text("device_id"), // Unique device identifier
+  deviceName: text("device_name"), // Device friendly name
+
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Shifts - Cashier shifts per till
+export const shifts = sqliteTable("shifts", {
+  id: text("id").primaryKey(),
+  tillId: text("till_id")
+    .notNull()
+    .references(() => tills.id, { onDelete: "cascade" }),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  cashierId: text("cashier_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+
+  // Cash balances
+  openingBalance: real("opening_balance").notNull().default(0),
+  closingBalance: real("closing_balance"), // Entered by cashier
+  expectedCash: real("expected_cash"), // Calculated: opening + cash sales + cash in - cash out - deposits
+  actualCash: real("actual_cash"), // Same as closingBalance
+  variance: real("variance"), // actualCash - expectedCash
+
+  // Status
+  status: text("status", { enum: ["open", "closed"] })
+    .notNull()
+    .default("open"),
+
+  // Timestamps
+  openedAt: integer("opened_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  closedAt: integer("closed_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Cash Movements - Track cash in/out during shifts
+export const cashMovements = sqliteTable("cash_movements", {
+  id: text("id").primaryKey(),
+  shiftId: text("shift_id")
+    .notNull()
+    .references(() => shifts.id, { onDelete: "cascade" }),
+
+  // Movement type
+  type: text("type", {
+    enum: ["cash_in", "cash_out", "bank_deposit", "petty_cash"],
+  }).notNull(),
+
+  // Amount
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+
+  // Details
+  reason: text("reason").notNull(), // Brief description
+  notes: text("notes"),
+
+  // Approval (required for cash movements)
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Day Ends - Day end records per branch per day
+export const dayEnds = sqliteTable("day_ends", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Date (business date, not timestamp)
+  businessDate: integer("business_date", { mode: "timestamp" }).notNull(), // Date only (start of day)
+
+  // Totals summary
+  totalSales: real("total_sales").notNull().default(0), // Sum of all sales
+  totalCash: real("total_cash").notNull().default(0), // Sum of cash payments
+  totalVariance: real("total_variance").notNull().default(0), // Sum of all shift variances
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "reviewed", "approved", "reopened"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Edit window (24 hours from approval)
+  closedAt: integer("closed_at", { mode: "timestamp" }),
+  canEditUntil: integer("can_edit_until", { mode: "timestamp" }), // closedAt + 24 hours
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  reviewedBy: text("reviewed_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Day End Shifts - Links day ends to shifts (many-to-many)
+export const dayEndShifts = sqliteTable("day_end_shifts", {
+  id: text("id").primaryKey(),
+  dayEndId: text("day_end_id")
+    .notNull()
+    .references(() => dayEnds.id, { onDelete: "cascade" }),
+  shiftId: text("shift_id")
+    .notNull()
+    .references(() => shifts.id, { onDelete: "cascade" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Day End Payments - Payment method reconciliation
+export const dayEndPayments = sqliteTable("day_end_payments", {
+  id: text("id").primaryKey(),
+  dayEndId: text("day_end_id")
+    .notNull()
+    .references(() => dayEnds.id, { onDelete: "cascade" }),
+
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+
+  // Expected vs actual
+  expectedAmount: real("expected_amount").notNull(), // From system
+  actualAmount: real("actual_amount").notNull(), // Counted/verified
+  variance: real("variance").notNull(), // actualAmount - expectedAmount
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Expense Categories - Hierarchical expense categories per branch
+export const expenseCategories = sqliteTable("expense_categories", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  parentId: text("parent_id").references((): any => expenseCategories.id, {
+    onDelete: "set null",
+  }), // For hierarchical categories
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false), // Pre-defined categories
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Expense Budgets - Budget tracking per category and period
+export const expenseBudgets = sqliteTable("expense_budgets", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  categoryId: text("category_id")
+    .notNull()
+    .references(() => expenseCategories.id, { onDelete: "cascade" }),
+
+  // Period
+  period: text("period", {
+    enum: ["monthly", "quarterly", "yearly"],
+  }).notNull(),
+  year: integer("year").notNull(), // e.g., 2025
+  month: integer("month"), // 1-12 (for monthly)
+  quarter: integer("quarter"), // 1-4 (for quarterly)
+
+  // Budget amount
+  budgetAmount: real("budget_amount").notNull(),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Expenses - Main expense records
+export const expenses = sqliteTable("expenses", {
+  id: text("id").primaryKey(),
+  expenseNumber: text("expense_number").notNull().unique(), // EXP2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  categoryId: text("category_id")
+    .notNull()
+    .references(() => expenseCategories.id, { onDelete: "restrict" }),
+
+  // Vendor/Payee (free text, not linked to suppliers)
+  vendor: text("vendor").notNull(),
+  description: text("description").notNull(),
+
+  // Amount
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  exchangeRate: real("exchange_rate").notNull(), // Snapshot at creation
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(), // amount * exchangeRate
+
+  // Dates
+  expenseDate: integer("expense_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  dueDate: integer("due_date", { mode: "timestamp" }),
+  paidDate: integer("paid_date", { mode: "timestamp" }),
+
+  // Tax & Recurring
+  isTaxDeductible: integer("is_tax_deductible", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  isRecurring: integer("is_recurring", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  recurringFrequency: text("recurring_frequency", {
+    enum: ["monthly", "quarterly", "yearly"],
+  }), // null if not recurring
+  recurringEndDate: integer("recurring_end_date", { mode: "timestamp" }), // null = indefinite
+  recurringParentId: text("recurring_parent_id").references(
+    (): any => expenses.id,
+    { onDelete: "set null" },
+  ), // Link to original recurring expense
+
+  // Payment tracking
+  amountPaid: real("amount_paid").notNull().default(0), // Sum of payments in base currency
+  amountDue: real("amount_due").notNull(), // amountInBaseCurrency - amountPaid
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "submitted", "approved", "rejected", "paid"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit trail
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  submittedBy: text("submitted_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  submittedAt: integer("submitted_at", { mode: "timestamp" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+  rejectedBy: text("rejected_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  rejectedAt: integer("rejected_at", { mode: "timestamp" }),
+  rejectionReason: text("rejection_reason"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Expense Payments - Multi-currency payment tracking
+export const expensePayments = sqliteTable("expense_payments", {
+  id: text("id").primaryKey(),
+  expenseId: text("expense_id")
+    .notNull()
+    .references(() => expenses.id, { onDelete: "cascade" }),
+
+  // Payment details
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+
+  // Exchange rate snapshot
+  exchangeRate: real("exchange_rate").notNull(),
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(), // amount * exchangeRate
+
+  // Reference & notes
+  referenceNumber: text("reference_number"),
+  paymentDate: integer("payment_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Inventory Losses - Track inventory losses and adjustments
+export const inventoryLosses = sqliteTable("inventory_losses", {
+  id: text("id").primaryKey(),
+  lossNumber: text("loss_number").notNull().unique(), // LOSS2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Loss type
+  lossType: text("loss_type", {
+    enum: ["theft", "breakage", "expired", "shrinkage", "other"],
+  }).notNull(),
+
+  // Details
+  reason: text("reason").notNull(), // Required description
+  referenceNumber: text("reference_number"), // Optional external reference
+
+  // Financial impact
+  totalValue: real("total_value").notNull().default(0), // Sum of line items (cost * quantity)
+
+  // Link to expense category (optional)
+  expenseCategoryId: text("expense_category_id").references(
+    () => expenseCategories.id,
+    { onDelete: "set null" },
+  ),
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "approved"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Date
+  lossDate: integer("loss_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit trail
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Inventory Loss Items - Line items for inventory losses
+export const inventoryLossItems = sqliteTable("inventory_loss_items", {
+  id: text("id").primaryKey(),
+  lossId: text("loss_id")
+    .notNull()
+    .references(() => inventoryLosses.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+
+  // Quantity & cost
+  quantity: real("quantity").notNull(),
+  costPrice: real("cost_price").notNull(), // Snapshot at time of loss
+  lineTotal: real("line_total").notNull(), // quantity * costPrice
+
+  // Notes
+  notes: text("notes"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Returns - Return requests for sales, laybys, and quotations
+export const returns = sqliteTable("returns", {
+  id: text("id").primaryKey(),
+  returnNumber: text("return_number").notNull().unique(), // RET2025-00001
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+
+  // Link to original transaction (one of these will be set)
+  saleId: text("sale_id").references(() => sales.id, {
+    onDelete: "restrict",
+  }),
+  laybyId: text("layby_id").references(() => laybys.id, {
+    onDelete: "restrict",
+  }),
+  quotationId: text("quotation_id").references(() => quotations.id, {
+    onDelete: "restrict",
+  }),
+
+  // Customer
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "restrict" }),
+
+  // Return details
+  reason: text("reason").notNull(), // Required reason for return
+  notes: text("notes"),
+
+  // Financial
+  totalAmount: real("total_amount").notNull().default(0), // Total refund amount
+  totalRefunded: real("total_refunded").notNull().default(0), // Amount refunded so far
+
+  // Status workflow
+  status: text("status", {
+    enum: ["draft", "approved", "processed"],
+  })
+    .notNull()
+    .default("draft"),
+
+  // Dates
+  returnDate: integer("return_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+  processedBy: text("processed_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  processedAt: integer("processed_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Return Items - Line items for returns with condition tracking
+export const returnItems = sqliteTable("return_items", {
+  id: text("id").primaryKey(),
+  returnId: text("return_id")
+    .notNull()
+    .references(() => returns.id, { onDelete: "cascade" }),
+
+  // Link to original line item (one of these will be set)
+  saleItemId: text("sale_item_id").references(() => saleItems.id, {
+    onDelete: "restrict",
+  }),
+  laybyItemId: text("layby_item_id").references(() => laybyItems.id, {
+    onDelete: "restrict",
+  }),
+  quotationItemId: text("quotation_item_id").references(
+    () => quotationItems.id,
+    { onDelete: "restrict" },
+  ),
+
+  // Product details
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+  quantity: real("quantity").notNull(),
+  price: real("price").notNull(), // Price at time of original sale
+
+  // Condition tracking
+  condition: text("condition", {
+    enum: ["good", "damaged"],
+  })
+    .notNull()
+    .default("good"),
+  conditionNotes: text("condition_notes"),
+
+  // Link to inventory loss if damaged
+  inventoryLossId: text("inventory_loss_id").references(
+    () => inventoryLosses.id,
+    { onDelete: "set null" },
+  ),
+
+  // Refund amount for this item
+  refundAmount: real("refund_amount").notNull(),
+
+  // Notes
+  notes: text("notes"),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Return Refunds - Refund payments for returns
+export const returnRefunds = sqliteTable("return_refunds", {
+  id: text("id").primaryKey(),
+  returnId: text("return_id")
+    .notNull()
+    .references(() => returns.id, { onDelete: "cascade" }),
+
+  // Refund details
+  amount: real("amount").notNull(),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  paymentMethodId: text("payment_method_id")
+    .notNull()
+    .references(() => paymentMethods.id, { onDelete: "restrict" }),
+
+  // Exchange rate snapshot
+  exchangeRate: real("exchange_rate").notNull(),
+  amountInBaseCurrency: real("amount_in_base_currency").notNull(),
+
+  // Link to shift if cash refund
+  shiftId: text("shift_id").references(() => shifts.id, {
+    onDelete: "set null",
+  }),
+
+  // Reference & notes
+  referenceNumber: text("reference_number"),
+  refundDate: integer("refund_date", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  notes: text("notes"),
+
+  // Audit
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Reorder Suggestions - Automatic reorder alerts when stock reaches minimum level
+export const reorderSuggestions = sqliteTable("reorder_suggestions", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+
+  // Stock levels at time of suggestion
+  currentStock: real("current_stock").notNull(),
+  minimumStock: real("minimum_stock").notNull(),
+  suggestedQuantity: real("suggested_quantity").notNull(), // How much to order
+
+  // Status
+  status: text("status", {
+    enum: ["pending", "dismissed", "snoozed", "ordered"],
+  })
+    .notNull()
+    .default("pending"),
+
+  // Snooze
+  snoozedUntil: integer("snoozed_until", { mode: "timestamp" }), // If snoozed, alert again after this date
+
+  // Link to created purchase order if ordered
+  purchaseId: text("purchase_id").references(() => purchases.id, {
+    onDelete: "set null",
+  }),
+
+  // Notes
+  notes: text("notes"),
+
+  // Audit
+  dismissedBy: text("dismissed_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  dismissedAt: integer("dismissed_at", { mode: "timestamp" }),
+  snoozedBy: text("snoozed_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  snoozedAt: integer("snoozed_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Audit Logs - Comprehensive audit trail for all database changes
+export const auditLogs = sqliteTable("audit_logs", {
+  id: text("id").primaryKey(),
+
+  // What was changed
+  tableName: text("table_name").notNull(), // Name of the table
+  recordId: text("record_id").notNull(), // ID of the record
+  action: text("action", {
+    enum: ["INSERT", "UPDATE", "DELETE"],
+  }).notNull(),
+
+  // Change details (stored as JSON)
+  oldValues: text("old_values", { mode: "json" }), // null for INSERT
+  newValues: text("new_values", { mode: "json" }), // null for DELETE
+
+  // Who made the change
+  userId: text("user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+
+  // When and where
+  timestamp: integer("timestamp", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  ipAddress: text("ip_address"), // Client IP address
+  userAgent: text("user_agent"), // Browser/client info
+
+  // Archiving
+  isArchived: integer("is_archived", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  archivedAt: integer("archived_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+
