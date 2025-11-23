@@ -1,10 +1,10 @@
 import { and, eq, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { getTenantDb } from "../../db/tenant.db";
 import {
   paymentMethods,
   branchPaymentMethods,
 } from "../../db/schemas/tenant.schema";
+import { getTenantDb } from "@/db/connection";
 
 export interface CreatePaymentMethodDto {
   name: string;

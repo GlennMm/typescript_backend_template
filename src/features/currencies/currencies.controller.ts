@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../../types";
-import { errorResponse, successResponse } from "../../utils/responses";
+import { errorResponse, successResponse } from "../../utils/response";
 import { CurrenciesService } from "./currencies.service";
 
 export class CurrenciesController {
@@ -12,7 +12,7 @@ export class CurrenciesController {
 
   getAllCurrencies = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const currencies = await this.service.getAllCurrencies(tenantId);
       return successResponse(res, currencies);
     } catch (error: any) {
@@ -22,7 +22,7 @@ export class CurrenciesController {
 
   getCurrencyById = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const currency = await this.service.getCurrencyById(tenantId, id);
       return successResponse(res, currency);
@@ -33,7 +33,7 @@ export class CurrenciesController {
 
   createCurrency = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const currency = await this.service.createCurrency(tenantId, req.body);
       return successResponse(res, currency, 201);
     } catch (error: any) {
@@ -43,7 +43,7 @@ export class CurrenciesController {
 
   updateCurrency = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const currency = await this.service.updateCurrency(
         tenantId,
@@ -58,7 +58,7 @@ export class CurrenciesController {
 
   deleteCurrency = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       await this.service.deleteCurrency(tenantId, id);
       return successResponse(res, {
@@ -71,7 +71,7 @@ export class CurrenciesController {
 
   setDefaultCurrency = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const currency = await this.service.setDefaultCurrency(tenantId, id);
       return successResponse(res, currency);

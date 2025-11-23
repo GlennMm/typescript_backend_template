@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../../types";
-import { errorResponse, successResponse } from "../../utils/responses";
+import { errorResponse, successResponse } from "../../utils/response";
 import { PaymentMethodsService } from "./payment-methods.service";
 
 export class PaymentMethodsController {
@@ -14,7 +14,7 @@ export class PaymentMethodsController {
 
   getAllPaymentMethods = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const methods = await this.service.getAllPaymentMethods(tenantId);
       return successResponse(res, methods);
     } catch (error: any) {
@@ -24,7 +24,7 @@ export class PaymentMethodsController {
 
   getPaymentMethodById = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const method = await this.service.getPaymentMethodById(tenantId, id);
       return successResponse(res, method);
@@ -35,7 +35,7 @@ export class PaymentMethodsController {
 
   createPaymentMethod = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const method = await this.service.createPaymentMethod(
         tenantId,
         req.body,
@@ -48,7 +48,7 @@ export class PaymentMethodsController {
 
   updatePaymentMethod = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const method = await this.service.updatePaymentMethod(
         tenantId,
@@ -63,7 +63,7 @@ export class PaymentMethodsController {
 
   deletePaymentMethod = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       await this.service.deletePaymentMethod(tenantId, id);
       return successResponse(res, {
@@ -78,7 +78,7 @@ export class PaymentMethodsController {
 
   getBranchPaymentMethods = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { branchId } = req.params;
       const methods = await this.service.getBranchPaymentMethods(
         tenantId,
@@ -92,7 +92,7 @@ export class PaymentMethodsController {
 
   createBranchPaymentMethod = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { branchId } = req.params;
       const method = await this.service.createBranchPaymentMethod(tenantId, {
         ...req.body,
@@ -106,7 +106,7 @@ export class PaymentMethodsController {
 
   updateBranchPaymentMethod = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const method = await this.service.updateBranchPaymentMethod(
         tenantId,
@@ -121,7 +121,7 @@ export class PaymentMethodsController {
 
   deleteBranchPaymentMethod = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       await this.service.deleteBranchPaymentMethod(tenantId, id);
       return successResponse(res, {

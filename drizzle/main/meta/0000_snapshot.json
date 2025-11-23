@@ -1,6 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
+  "id": "36287b7d-0edc-40f1-9c31-2a907c4b2575",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "subscription_plans": {
       "name": "subscription_plans",
@@ -117,15 +119,15 @@
         "super_admin_refresh_tokens_super_admin_id_super_admins_id_fk": {
           "name": "super_admin_refresh_tokens_super_admin_id_super_admins_id_fk",
           "tableFrom": "super_admin_refresh_tokens",
+          "tableTo": "super_admins",
           "columnsFrom": [
             "super_admin_id"
           ],
-          "tableTo": "super_admins",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -314,15 +316,15 @@
         "tenants_subscription_plan_id_subscription_plans_id_fk": {
           "name": "tenants_subscription_plan_id_subscription_plans_id_fk",
           "tableFrom": "tenants",
+          "tableTo": "subscription_plans",
           "columnsFrom": [
             "subscription_plan_id"
           ],
-          "tableTo": "subscription_plans",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -330,12 +332,14 @@
       "checkConstraints": {}
     }
   },
+  "views": {},
   "enums": {},
   "_meta": {
+    "schemas": {},
     "tables": {},
     "columns": {}
   },
-  "id": "38a932d8-5d8f-4f19-84bd-9459a5f4721d",
-  "prevId": "00000000-0000-0000-0000-000000000000",
-  "views": {}
+  "internal": {
+    "indexes": {}
+  }
 }

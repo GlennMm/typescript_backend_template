@@ -53,7 +53,7 @@ app.get("/health", (_req, res) => {
 });
 
 // API Documentation
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: "POS API Documentation",
 }));

@@ -1,33 +1,12 @@
 {
-  "version": "5",
+  "version": "7",
   "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1763870178141,
-      "tag": "0000_lying_expediter",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1763870867487,
-      "tag": "0001_strong_greymalkin",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
       "version": "6",
-      "when": 1763877323246,
-      "tag": "0002_clean_centennial",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1763881632635,
-      "tag": "0003_sleepy_blindfold",
+      "when": 1763883394633,
+      "tag": "0000_fixed_sumo",
       "breakpoints": true
     }
   ]

@@ -1,5 +1,5 @@
 import journal from './meta/_journal.json';
-import m0000 from './0000_fixed_sumo.sql';
+import m0000 from './0000_yielding_magdalene.sql';
 
   export default {
     journal,

@@ -11,6 +11,19 @@ CREATE TABLE `branch_inventory` (
 	FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE TABLE `branch_payment_methods` (
+	`id` text PRIMARY KEY NOT NULL,
+	`branch_id` text NOT NULL,
+	`payment_method_id` text,
+	`name` text,
+	`detail` text,
+	`is_active` integer DEFAULT true NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `branches` (
 	`id` text PRIMARY KEY NOT NULL,
 	`code` text NOT NULL,
@@ -51,6 +64,18 @@ CREATE TABLE `branches` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `branches_code_unique` ON `branches` (`code`);--> statement-breakpoint
+CREATE TABLE `currencies` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`symbol` text NOT NULL,
+	`exchange_rate` real DEFAULT 1 NOT NULL,
+	`is_default` integer DEFAULT false NOT NULL,
+	`detail` text,
+	`is_active` integer DEFAULT true NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `customers` (
 	`id` text PRIMARY KEY NOT NULL,
 	`first_name` text NOT NULL,
@@ -85,11 +110,34 @@ CREATE TABLE `inventory_transfers` (
 	FOREIGN KEY (`approved_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
+CREATE TABLE `payment_methods` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`is_default` integer DEFAULT false NOT NULL,
+	`detail` text,
+	`is_active` integer DEFAULT true NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `product_branch_taxes` (
+	`id` text PRIMARY KEY NOT NULL,
+	`product_id` text NOT NULL,
+	`branch_id` text NOT NULL,
+	`tax_id` text NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`tax_id`) REFERENCES `taxes`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `product_categories` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`description` text,
 	`parent_id` text,
+	`is_default` integer DEFAULT false NOT NULL,
+	`detail` text,
 	`is_active` integer DEFAULT true NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
@@ -114,6 +162,16 @@ CREATE TABLE `products` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `products_sku_unique` ON `products` (`sku`);--> statement-breakpoint
+CREATE TABLE `refresh_tokens` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`token` text NOT NULL,
+	`expires_at` integer NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `refresh_tokens_token_unique` ON `refresh_tokens` (`token`);--> statement-breakpoint
 CREATE TABLE `shop_settings` (
 	`id` text PRIMARY KEY NOT NULL,
 	`company_name` text NOT NULL,
@@ -154,4 +212,46 @@ CREATE TABLE `staff_assignments` (
 	FOREIGN KEY (`assigned_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-ALTER TABLE `users` ADD `primary_branch_id` text REFERENCES branches(id);
+CREATE TABLE `suppliers` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`phone` text,
+	`email` text,
+	`address` text,
+	`vat_number` text,
+	`tin_number` text,
+	`contact_person` text,
+	`is_active` integer DEFAULT true NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `taxes` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`tax_rate` real NOT NULL,
+	`tax_code` text,
+	`tax_id` text,
+	`is_active` integer DEFAULT true NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `users` (
+	`id` text PRIMARY KEY NOT NULL,
+	`email` text NOT NULL,
+	`password_hash` text NOT NULL,
+	`name` text NOT NULL,
+	`role` text DEFAULT 'TenantUser' NOT NULL,
+	`primary_branch_id` text,
+	`is_active` integer DEFAULT false NOT NULL,
+	`activated_at` integer,
+	`otp_hash` text,
+	`otp_expires_at` integer,
+	`require_password_change` integer DEFAULT false NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`primary_branch_id`) REFERENCES `branches`(`id`) ON UPDATE no action ON DELETE set null
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);

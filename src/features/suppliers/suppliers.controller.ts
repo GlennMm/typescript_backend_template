@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../../types";
-import { errorResponse, successResponse } from "../../utils/responses";
+import { errorResponse, successResponse } from "../../utils/response";
 import { SuppliersService } from "./suppliers.service";
 
 export class SuppliersController {
@@ -12,7 +12,7 @@ export class SuppliersController {
 
   getAllSuppliers = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const search = req.query.search as string | undefined;
       const suppliers = await this.service.getAllSuppliers(tenantId, search);
       return successResponse(res, suppliers);
@@ -23,7 +23,7 @@ export class SuppliersController {
 
   getSupplierById = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const supplier = await this.service.getSupplierById(tenantId, id);
       return successResponse(res, supplier);
@@ -34,7 +34,7 @@ export class SuppliersController {
 
   createSupplier = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const supplier = await this.service.createSupplier(tenantId, req.body);
       return successResponse(res, supplier, 201);
     } catch (error: any) {
@@ -44,7 +44,7 @@ export class SuppliersController {
 
   updateSupplier = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const supplier = await this.service.updateSupplier(
         tenantId,
@@ -59,7 +59,7 @@ export class SuppliersController {
 
   deleteSupplier = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       await this.service.deleteSupplier(tenantId, id);
       return successResponse(res, {

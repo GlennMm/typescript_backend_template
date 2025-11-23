@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { getTenantDb } from "../../db/tenant.db";
 import { currencies } from "../../db/schemas/tenant.schema";
+import { getTenantDb } from "@/db/connection";
 
 export interface CreateCurrencyDto {
   name: string;

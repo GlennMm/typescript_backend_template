@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { getTenantDb } from "../../db/tenantDb";
 import { taxes, productBranchTaxes } from "../../db/schemas/tenant.schema";
+import { getTenantDb } from "@/db/connection";
 
 interface CreateTaxDto {
   name: string;

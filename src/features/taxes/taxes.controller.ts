@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../../types";
-import { errorResponse, successResponse } from "../../utils/responses";
+import { errorResponse, successResponse } from "../../utils/response";
 import { TaxesService } from "./taxes.service";
 
 export class TaxesController {
@@ -12,7 +12,7 @@ export class TaxesController {
 
   getAllTaxes = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const taxes = await this.service.getAllTaxes(tenantId);
       return successResponse(res, taxes);
     } catch (error: any) {
@@ -22,7 +22,7 @@ export class TaxesController {
 
   getTaxById = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const tax = await this.service.getTaxById(tenantId, id);
       return successResponse(res, tax);
@@ -33,7 +33,7 @@ export class TaxesController {
 
   createTax = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const tax = await this.service.createTax(tenantId, req.body);
       return successResponse(res, tax, 201);
     } catch (error: any) {
@@ -43,7 +43,7 @@ export class TaxesController {
 
   updateTax = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       const tax = await this.service.updateTax(tenantId, id, req.body);
       return successResponse(res, tax);
@@ -54,7 +54,7 @@ export class TaxesController {
 
   deleteTax = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { id } = req.params;
       await this.service.deleteTax(tenantId, id);
       return successResponse(res, { message: "Tax deleted successfully" });
@@ -65,7 +65,7 @@ export class TaxesController {
 
   assignTaxToProduct = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const assignment = await this.service.assignTaxToProduct(
         tenantId,
         req.body,
@@ -78,7 +78,7 @@ export class TaxesController {
 
   removeTaxFromProduct = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { productId, branchId, taxId } = req.params;
       await this.service.removeTaxFromProduct(
         tenantId,
@@ -96,7 +96,7 @@ export class TaxesController {
 
   getProductBranchTaxes = async (req: AuthRequest, res: Response) => {
     try {
-      const tenantId = req.tenantId!;
+      const tenantId = req.tenant?.tenantId!;
       const { productId, branchId } = req.params;
       const taxes = await this.service.getProductBranchTaxes(
         tenantId,
