@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { env } from "../../config/env";
 import { getMainDb, getTenantDb } from "../../db/connection";
 import {
   superAdminRefreshTokens,
@@ -256,7 +255,7 @@ export class AuthService {
 
         return { accessToken };
       }
-    } catch (error) {
+    } catch (_error) {
       throw new Error("Invalid or expired refresh token");
     }
   }

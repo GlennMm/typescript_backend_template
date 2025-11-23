@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { existsSync, mkdirSync } from "fs";
-import { dirname } from "path";
 import { env } from "../config/env";
 
 async function runMigrations() {

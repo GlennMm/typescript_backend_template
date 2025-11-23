@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "bun:test";
 import { nanoid } from "nanoid";
 import request from "supertest";
 import app from "../app";
@@ -21,7 +21,7 @@ describe("Auth E2E Tests", () => {
     await db.insert(tenants).values({
       id: testTenantId,
       name: "Test Tenant",
-      slug: "test-tenant-" + Date.now(),
+      slug: `test-tenant-${Date.now()}`,
       subscriptionPlanId: testPlanId,
       subscriptionStatus: "active",
       subscriptionStartDate: new Date(),

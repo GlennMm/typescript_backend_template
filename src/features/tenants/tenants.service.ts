@@ -1,12 +1,11 @@
+import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { join } from "path";
 import { env } from "../../config/env";
 import { createTenantDb, getMainDb } from "../../db/connection";
 import { subscriptionPlans, tenants } from "../../db/schemas/main.schema";
 import { users } from "../../db/schemas/tenant.schema";
 import { generateOTP, getOTPExpiration, hashOTP } from "../../utils/otp";
-import { hashPassword } from "../../utils/password";
 import type {
   CreateTenantDto,
   UpdateSubscriptionDto,

@@ -58,7 +58,7 @@ export async function resolveTenant(
     } as TenantContext;
 
     next();
-  } catch (error) {
+  } catch (_error) {
     return errorResponse(
       res,
       "Failed to resolve tenant",

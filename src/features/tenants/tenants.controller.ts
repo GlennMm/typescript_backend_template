@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import type { AuthRequest } from "../../types";
-import { errorResponse, successResponse } from "../../utils/response";
+import { successResponse } from "../../utils/response";
 import { TenantsService } from "./tenants.service";
 import {
   createTenantSchema,
@@ -16,7 +16,7 @@ export class TenantsController {
   }
 
   getAllTenants = async (
-    req: AuthRequest,
+    _req: AuthRequest,
     res: Response,
     next: NextFunction,
   ) => {
@@ -129,7 +129,7 @@ export class TenantsController {
   };
 
   getSubscriptionPlans = async (
-    req: AuthRequest,
+    _req: AuthRequest,
     res: Response,
     next: NextFunction,
   ) => {

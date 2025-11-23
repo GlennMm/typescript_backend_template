@@ -26,7 +26,7 @@ export function authenticate(
     };
 
     next();
-  } catch (error) {
+  } catch (_error) {
     return errorResponse(res, "Invalid or expired token", 401, "INVALID_TOKEN");
   }
 }
