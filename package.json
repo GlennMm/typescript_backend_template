@@ -1,0 +1,48 @@
+{
+  "name": "saas-backend",
+  "version": "1.0.0",
+  "description": "Production-ready SaaS backend with multi-tenancy",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "db:generate:main": "drizzle-kit generate:sqlite --config=drizzle.config.ts",
+    "db:generate:tenant": "drizzle-kit generate:sqlite --config=drizzle.tenant.config.ts",
+    "db:generate": "bun run db:generate:main && bun run db:generate:tenant",
+    "db:migrate": "bun src/db/migrate.ts",
+    "db:seed": "bun src/db/seed.ts",
+    "db:studio": "drizzle-kit studio",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.2.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "drizzle-orm": "^0.29.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.1.6",
+    "winston": "^3.11.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/supertest": "^6.0.2",
+    "bun-types": "latest",
+    "drizzle-kit": "^0.20.9",
+    "supertest": "^6.3.3",
+    "typescript": "^5.3.3"
+  }
+}
