@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, not, sql } from "drizzle-orm";
 import { getTenantDb } from "@/db/connection";
 import {
   shifts,
@@ -288,7 +288,7 @@ export class ShiftsService {
     const movements = await db
       .select()
       .from(cashMovements)
-      .where(and(eq(cashMovements.shiftId, shiftId), isNull(cashMovements.approvedBy).not()));
+      .where(and(eq(cashMovements.shiftId, shiftId), not(isNull(cashMovements.approvedBy))));
 
     let totalCashIn = 0;
     let totalCashOut = 0;
