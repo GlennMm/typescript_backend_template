@@ -14,6 +14,11 @@ export const users = sqliteTable('users', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
   activatedAt: integer('activated_at', { mode: 'timestamp' }),
 
+  // OTP for first-time login
+  otpHash: text('otp_hash'),
+  otpExpiresAt: integer('otp_expires_at', { mode: 'timestamp' }),
+  requirePasswordChange: integer('require_password_change', { mode: 'boolean' }).notNull().default(false),
+
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });

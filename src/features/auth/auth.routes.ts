@@ -18,4 +18,7 @@ router.post('/register', resolveTenant, checkSubscription, authController.regist
 router.post('/refresh', authController.refreshToken);
 router.post('/logout', authenticate, authController.logout);
 
+// Password management (requires authentication and tenant context)
+router.post('/change-password', resolveTenant, checkSubscription, authenticate, authController.changePassword);
+
 export default router;

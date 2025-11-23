@@ -5,10 +5,6 @@ export const createTenantSchema = z.object({
   slug: z.string().min(2, 'Slug must be at least 2 characters').regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
   subscriptionPlanId: z.string().min(1, 'Subscription plan is required'),
   adminEmail: z.string().email('Invalid email address'),
-  adminPassword: z.string().min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
   adminName: z.string().min(2, 'Admin name must be at least 2 characters'),
 });
 

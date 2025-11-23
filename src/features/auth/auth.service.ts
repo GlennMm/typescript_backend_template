@@ -85,9 +85,28 @@ export class AuthService {
       throw new Error('Account is not activated. Please contact your administrator.');
     }
 
+    // Check if user has OTP and if it's expired
+    if (user.otpHash && user.otpExpiresAt) {
+      if (user.otpExpiresAt < new Date()) {
+        throw new Error('OTP has expired. Please contact your administrator for a new OTP.');
+      }
+    }
+
     const isPasswordValid = await verifyPassword(dto.password, user.passwordHash);
     if (!isPasswordValid) {
       throw new Error('Invalid credentials');
+    }
+
+    // If OTP was used successfully, clear OTP fields
+    if (user.otpHash) {
+      await db
+        .update(users)
+        .set({
+          otpHash: null,
+          otpExpiresAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, user.id));
     }
 
     const tokenId = nanoid();
@@ -124,6 +143,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
       },
+      requirePasswordChange: user.requirePasswordChange,
     };
   }
 
@@ -232,5 +252,35 @@ export class AuthService {
       const db = getTenantDb(tenantId);
       await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken));
     }
+  }
+
+  // Change Password (after OTP login)
+  async changePassword(tenantId: string, userId: string, newPassword: string) {
+    const db = getTenantDb(tenantId);
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const newPasswordHash = await hashPassword(newPassword);
+
+    await db
+      .update(users)
+      .set({
+        passwordHash: newPasswordHash,
+        requirePasswordChange: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+
+    return {
+      message: 'Password changed successfully',
+    };
   }
 }

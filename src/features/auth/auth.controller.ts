@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
-import { loginSchema, refreshTokenSchema, registerSchema } from './auth.validation';
+import { loginSchema, refreshTokenSchema, registerSchema, changePasswordSchema } from './auth.validation';
 import { successResponse, errorResponse } from '../../utils/response';
 import { AuthRequest } from '../../types';
 
@@ -69,6 +69,28 @@ export class AuthController {
 
       await this.authService.logout(refreshToken, req.user.role, req.user.tenantId);
       return successResponse(res, { message: 'Logged out successfully' });
+    } catch (error: any) {
+      next(error);
+    }
+  };
+
+  changePassword = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        return errorResponse(res, 'Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      if (!req.tenant) {
+        return errorResponse(res, 'Tenant context required', 400, 'TENANT_CONTEXT_MISSING');
+      }
+
+      const dto = changePasswordSchema.parse(req.body);
+      const result = await this.authService.changePassword(
+        req.tenant.tenantId,
+        req.user.userId,
+        dto.newPassword
+      );
+      return successResponse(res, result);
     } catch (error: any) {
       next(error);
     }

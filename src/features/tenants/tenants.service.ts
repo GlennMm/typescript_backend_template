@@ -4,6 +4,7 @@ import { getMainDb, createTenantDb } from '../../db/connection';
 import { tenants, subscriptionPlans } from '../../db/schemas/main.schema';
 import { users } from '../../db/schemas/tenant.schema';
 import { hashPassword } from '../../utils/password';
+import { generateOTP, hashOTP, getOTPExpiration } from '../../utils/otp';
 import { env } from '../../config/env';
 import { CreateTenantDto, UpdateTenantDto, UpdateSubscriptionDto } from './tenants.validation';
 import { join } from 'path';
@@ -110,17 +111,24 @@ export class TenantsService {
     // Create tenant database
     const tenantDb = createTenantDb(tenantId);
 
-    // Create tenant admin user in the tenant database
-    const passwordHash = await hashPassword(dto.adminPassword);
+    // Generate OTP for tenant admin instead of using provided password
+    const otp = generateOTP(8); // 8-character alphanumeric OTP
+    const otpHash = await hashOTP(otp);
+    const otpExpiration = getOTPExpiration(); // 15 minutes from now
 
+    // Create tenant admin user in the tenant database with OTP
+    // Use the OTP as temporary password, but mark for password change
     await tenantDb.insert(users).values({
       id: nanoid(),
       email: dto.adminEmail,
-      passwordHash,
+      passwordHash: otpHash,
       name: dto.adminName,
       role: 'TenantAdmin',
       isActive: true,
       activatedAt: new Date(),
+      otpHash,
+      otpExpiresAt: otpExpiration,
+      requirePasswordChange: true,
     });
 
     return {
@@ -129,6 +137,8 @@ export class TenantsService {
       slug: newTenant.slug,
       subscriptionStatus: newTenant.subscriptionStatus,
       planName: plan.name,
+      otp, // Return the plain OTP to be shared with tenant admin
+      otpExpiresAt: otpExpiration,
     };
   }
 
