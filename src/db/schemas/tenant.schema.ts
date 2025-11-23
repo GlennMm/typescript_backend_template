@@ -297,6 +297,80 @@ export const inventoryTransfers = sqliteTable("inventory_transfers", {
   completedAt: integer("completed_at", { mode: "timestamp" }),
 });
 
+// Stock Takes - Physical inventory counts per branch
+export const stockTakes = sqliteTable("stock_takes", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id")
+    .notNull()
+    .references(() => branches.id, { onDelete: "cascade" }),
+  status: text("status", {
+    enum: ["initialized", "started", "counted", "approved", "rejected"],
+  })
+    .notNull()
+    .default("initialized"),
+
+  // Audit trail
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "set null" }),
+  startedBy: text("started_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  countedBy: text("counted_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedBy: text("approved_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+
+  // Timestamps
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  startedAt: integer("started_at", { mode: "timestamp" }),
+  countedAt: integer("counted_at", { mode: "timestamp" }),
+  approvedAt: integer("approved_at", { mode: "timestamp" }),
+
+  // Rejection handling
+  rejectionNotes: text("rejection_notes"),
+
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Stock Take Items - Individual product counts in a stock take
+export const stockTakeItems = sqliteTable("stock_take_items", {
+  id: text("id").primaryKey(),
+  stockTakeId: text("stock_take_id")
+    .notNull()
+    .references(() => stockTakes.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+
+  // Quantities
+  expectedQuantity: real("expected_quantity").notNull(), // Snapshot at creation
+  actualQuantity: real("actual_quantity"), // Physical count
+  variance: real("variance"), // actualQuantity - expectedQuantity
+
+  // Item notes
+  notes: text("notes"), // Discrepancy reason
+
+  // Audit
+  countedBy: text("counted_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  countedAt: integer("counted_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 // Customers - Tenant-wide customer records
 export const customers = sqliteTable("customers", {
   id: text("id").primaryKey(),

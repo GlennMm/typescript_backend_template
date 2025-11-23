@@ -282,6 +282,48 @@ const options: OAS3Options = {
             updatedAt: { type: "string", format: "date-time" },
           },
         },
+        StockTake: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            branchId: { type: "string" },
+            branchName: { type: "string" },
+            status: {
+              type: "string",
+              enum: ["initialized", "started", "counted", "approved", "rejected"],
+              example: "started"
+            },
+            createdBy: { type: "string" },
+            startedBy: { type: "string" },
+            countedBy: { type: "string" },
+            approvedBy: { type: "string" },
+            createdAt: { type: "string", format: "date-time" },
+            startedAt: { type: "string", format: "date-time" },
+            countedAt: { type: "string", format: "date-time" },
+            approvedAt: { type: "string", format: "date-time" },
+            rejectionNotes: { type: "string" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
+        StockTakeItem: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            stockTakeId: { type: "string" },
+            productId: { type: "string" },
+            productName: { type: "string" },
+            productSku: { type: "string" },
+            unit: { type: "string" },
+            expectedQuantity: { type: "number", example: 100 },
+            actualQuantity: { type: "number", example: 95 },
+            variance: { type: "number", example: -5 },
+            notes: { type: "string", example: "5 damaged units found" },
+            countedBy: { type: "string" },
+            countedAt: { type: "string", format: "date-time" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
       },
     },
     security: [
@@ -313,6 +355,10 @@ const options: OAS3Options = {
       {
         name: "Inventory",
         description: "Inventory management and stock tracking",
+      },
+      {
+        name: "Stock Takes",
+        description: "Physical inventory counts with multi-stage approval workflow",
       },
       {
         name: "Transfers",

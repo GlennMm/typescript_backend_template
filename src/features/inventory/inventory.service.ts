@@ -7,6 +7,7 @@ import {
   inventoryTransfers,
   products,
 } from "../../db/schemas/tenant.schema";
+import { StockTakesService } from "../stock-takes/stock-takes.service";
 import type {
   AdjustInventoryDto,
   ApproveTransferDto,
@@ -15,6 +16,11 @@ import type {
 } from "./inventory.validation";
 
 export class InventoryService {
+  private stockTakesService: StockTakesService;
+
+  constructor() {
+    this.stockTakesService = new StockTakesService();
+  }
   // Branch Inventory Methods
 
   async getBranchInventory(tenantId: string, branchId: string) {
@@ -129,6 +135,17 @@ export class InventoryService {
       throw new Error("Branch not found");
     }
 
+    // Check for active stock-take
+    const hasActiveStockTake = await this.stockTakesService.hasActiveStockTake(
+      tenantId,
+      branchId,
+    );
+    if (hasActiveStockTake) {
+      throw new Error(
+        "Cannot adjust inventory - branch has an active stock-take in progress",
+      );
+    }
+
     const [product] = await db
       .select()
       .from(products)
@@ -208,6 +225,17 @@ export class InventoryService {
 
     if (!branch) {
       throw new Error("Branch not found");
+    }
+
+    // Check for active stock-take
+    const hasActiveStockTake = await this.stockTakesService.hasActiveStockTake(
+      tenantId,
+      branchId,
+    );
+    if (hasActiveStockTake) {
+      throw new Error(
+        "Cannot set inventory - branch has an active stock-take in progress",
+      );
     }
 
     const [product] = await db
@@ -392,6 +420,29 @@ export class InventoryService {
 
     if (dto.fromBranchId === dto.toBranchId) {
       throw new Error("Cannot transfer to the same branch");
+    }
+
+    // Check for active stock-take on either branch
+    const hasActiveStockTakeFrom =
+      await this.stockTakesService.hasActiveStockTake(
+        tenantId,
+        dto.fromBranchId,
+      );
+    const hasActiveStockTakeTo = await this.stockTakesService.hasActiveStockTake(
+      tenantId,
+      dto.toBranchId,
+    );
+
+    if (hasActiveStockTakeFrom) {
+      throw new Error(
+        "Cannot create transfer - source branch has an active stock-take in progress",
+      );
+    }
+
+    if (hasActiveStockTakeTo) {
+      throw new Error(
+        "Cannot create transfer - destination branch has an active stock-take in progress",
+      );
     }
 
     // Verify product exists

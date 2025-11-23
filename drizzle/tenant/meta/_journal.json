@@ -8,6 +8,13 @@
       "when": 1763883394633,
       "tag": "0000_fixed_sumo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1763884725801,
+      "tag": "0001_outstanding_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }
