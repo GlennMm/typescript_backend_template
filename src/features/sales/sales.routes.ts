@@ -1,10 +1,10 @@
 import express from "express";
-import { authenticate } from "../../middlewares/auth.middleware";
 import { CustomersController } from "./customers.controller";
 import { SalesController } from "./sales.controller";
 import { QuotationsController } from "./quotations.controller";
 import { LaybysController } from "./laybys.controller";
 import { SettingsController } from "./settings.controller";
+import { authenticate } from "@/middleware/auth";
 
 const router = express.Router();
 
