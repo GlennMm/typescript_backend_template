@@ -3,6 +3,7 @@ import type { AuthRequest } from "../../types";
 import { successResponse } from "../../utils/response";
 import { TenantsService } from "./tenants.service";
 import {
+  registerTenantSchema,
   createTenantSchema,
   updateSubscriptionSchema,
   updateTenantSchema,
@@ -14,6 +15,20 @@ export class TenantsController {
   constructor() {
     this.tenantsService = new TenantsService();
   }
+
+  registerTenant = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const dto = registerTenantSchema.parse(req.body);
+      const result = await this.tenantsService.registerTenant(dto);
+      return successResponse(res, result, 201);
+    } catch (error: any) {
+      next(error);
+    }
+  };
 
   getAllTenants = async (
     _req: AuthRequest,

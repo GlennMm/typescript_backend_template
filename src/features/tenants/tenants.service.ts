@@ -2,18 +2,120 @@ import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { env } from "../../config/env";
-import { createTenantDb, getMainDb } from "../../db/connection";
+import { createTenantDb, getMainDb, getTenantDb } from "../../db/connection";
 import { seedTenantData } from "../../db/tenant-seed";
 import { subscriptionPlans, tenants } from "../../db/schemas/main.schema";
 import { users } from "../../db/schemas/tenant.schema";
+import { generateAccessToken, generateRefreshToken } from "../../utils/jwt";
+import { hashPassword } from "../../utils/password";
 import { generateOTP, getOTPExpiration, hashOTP } from "../../utils/otp";
 import type {
+  RegisterTenantDto,
   CreateTenantDto,
   UpdateSubscriptionDto,
   UpdateTenantDto,
 } from "./tenants.validation";
 
 export class TenantsService {
+  async registerTenant(dto: RegisterTenantDto) {
+    const mainDb = getMainDb();
+
+    // Check if slug already exists
+    const existingTenant = await mainDb
+      .select()
+      .from(tenants)
+      .where(eq(tenants.slug, dto.tenantSlug))
+      .limit(1);
+
+    if (existingTenant.length > 0) {
+      throw new Error("Company slug already exists");
+    }
+
+    // Check if email already exists in any tenant
+    // (We'll skip this for now as it requires checking all tenant databases)
+
+    // Get the Free subscription plan
+    const [freePlan] = await mainDb
+      .select()
+      .from(subscriptionPlans)
+      .where(eq(subscriptionPlans.name, "Free"))
+      .limit(1);
+
+    if (!freePlan) {
+      throw new Error("Free subscription plan not found");
+    }
+
+    // Create tenant
+    const tenantId = nanoid();
+    const tenantDbPath = join(env.TENANT_DB_DIR, `tenant_${tenantId}.db`);
+
+    const newTenant = {
+      id: tenantId,
+      name: dto.tenantName,
+      slug: dto.tenantSlug,
+      subscriptionPlanId: freePlan.id,
+      subscriptionStatus: "active" as const,
+      subscriptionStartDate: new Date(),
+      dbPath: tenantDbPath,
+    };
+
+    await mainDb.insert(tenants).values(newTenant);
+
+    // Initialize tenant database
+    await createTenantDb(tenantId);
+    const tenantDb = getTenantDb(tenantId);
+
+    // Create admin user
+    const hashedPassword = await hashPassword(dto.password);
+    const userId = nanoid();
+
+    await tenantDb.insert(users).values({
+      id: userId,
+      email: dto.email,
+      name: dto.name,
+      passwordHash: hashedPassword,
+      role: "owner",
+      isActive: true,
+    });
+
+    // Generate tokens
+    const accessToken = generateAccessToken({
+      userId,
+      email: dto.email,
+      tenantId,
+      role: "owner",
+    });
+
+    const refreshToken = generateRefreshToken({
+      userId,
+      email: dto.email,
+      tenantId,
+      role: "owner",
+    });
+
+    return {
+      user: {
+        id: userId,
+        email: dto.email,
+        name: dto.name,
+        tenantId,
+        role: "owner" as const,
+        createdAt: new Date().toISOString(),
+      },
+      tenant: {
+        id: tenantId,
+        name: dto.tenantName,
+        slug: dto.tenantSlug,
+        plan: "free" as const,
+        subscriptionStatus: "active" as const,
+        subscriptionExpiresAt: null,
+        createdAt: new Date().toISOString(),
+      },
+      accessToken,
+      refreshToken,
+    };
+  }
+
   async getAllTenants() {
     const db = getMainDb();
 

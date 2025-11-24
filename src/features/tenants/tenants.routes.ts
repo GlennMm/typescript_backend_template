@@ -5,7 +5,51 @@ import { TenantsController } from "./tenants.controller";
 const router = Router();
 const tenantsController = new TenantsController();
 
-// All tenant management routes require SuperAdmin authentication
+/**
+ * @swagger
+ * /api/tenants/register:
+ *   post:
+ *     tags: [Tenants]
+ *     summary: Register new tenant (public)
+ *     description: Create a new tenant with admin user - no authentication required
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *               - tenantName
+ *               - tenantSlug
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: John Doe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john@example.com
+ *               password:
+ *                 type: string
+ *                 example: securePassword123
+ *               tenantName:
+ *                 type: string
+ *                 example: Acme Corp
+ *               tenantSlug:
+ *                 type: string
+ *                 example: acme-corp
+ *     responses:
+ *       201:
+ *         description: Tenant and admin user created successfully
+ *       400:
+ *         description: Validation error or slug already exists
+ */
+router.post("/register", tenantsController.registerTenant);
+
+// All other tenant management routes require SuperAdmin authentication
 router.use(authenticate, authorize("SuperAdmin"));
 
 /**

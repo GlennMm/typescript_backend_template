@@ -89,7 +89,7 @@ function OnboardingPage() {
           user: response.data.user,
           tenant: response.data.tenant,
           accessToken: response.data.accessToken,
-          refreshToken: "",
+          refreshToken: response.data.refreshToken,
         });
         navigate({ to: "/" });
       }

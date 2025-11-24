@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+export const registerTenantSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  tenantName: z.string().min(2, "Company name must be at least 2 characters"),
+  tenantSlug: z
+    .string()
+    .min(2, "Company slug must be at least 2 characters")
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Slug must contain only lowercase letters, numbers, and hyphens",
+    ),
+});
+
 export const createTenantSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   slug: z
@@ -30,6 +44,7 @@ export const updateSubscriptionSchema = z.object({
   subscriptionEndDate: z.string().datetime().optional(),
 });
 
+export type RegisterTenantDto = z.infer<typeof registerTenantSchema>;
 export type CreateTenantDto = z.infer<typeof createTenantSchema>;
 export type UpdateTenantDto = z.infer<typeof updateTenantSchema>;
 export type UpdateSubscriptionDto = z.infer<typeof updateSubscriptionSchema>;

@@ -20,9 +20,14 @@ export const authApi = {
   register: async (
     data: RegisterTenantRequest,
   ): Promise<
-    ApiResponse<{ user: User; tenant: Tenant; accessToken: string }>
+    ApiResponse<{
+      user: User;
+      tenant: Tenant;
+      accessToken: string;
+      refreshToken: string;
+    }>
   > => {
-    const response = await apiClient.post("/tenants", data);
+    const response = await apiClient.post("/tenants/register", data);
     return response.data;
   },
 
