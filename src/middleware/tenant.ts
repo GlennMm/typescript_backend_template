@@ -10,9 +10,9 @@ export async function resolveTenant(
   res: Response,
   next: NextFunction,
 ) {
-  const tenantId = req.headers["x-tenant-id"] as string;
+  const tenantSlug = req.headers["x-tenant-id"] as string;
 
-  if (!tenantId) {
+  if (!tenantSlug) {
     return errorResponse(
       res,
       "Tenant ID is required",
@@ -38,7 +38,7 @@ export async function resolveTenant(
         subscriptionPlans,
         eq(tenants.subscriptionPlanId, subscriptionPlans.id),
       )
-      .where(eq(tenants.id, tenantId))
+      .where(eq(tenants.slug, tenantSlug))
       .limit(1);
 
     if (!tenant) {
