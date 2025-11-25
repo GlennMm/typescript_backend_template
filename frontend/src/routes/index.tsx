@@ -144,79 +144,158 @@ function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/50">
-      <header className="border-b bg-background">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{tenant.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {tenant.plan.charAt(0).toUpperCase() + tenant.plan.slice(1)} Plan
-            </p>
+    <div className="flex min-h-screen w-full flex-col">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <div className="flex w-full items-center gap-4 md:gap-2">
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">{tenant.name}</h1>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
             Sign Out
           </Button>
         </div>
       </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Welcome back, {user.name}!</CardTitle>
-              <CardDescription>You're logged in as {user.role}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+      <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 bg-muted/40 p-4 md:gap-8 md:p-10">
+        <div className="mx-auto grid w-full max-w-6xl gap-2">
+          <h1 className="text-3xl font-semibold">Welcome back, {user.name}!</h1>
+          <p className="text-muted-foreground">
+            Manage your account and view your activity
+          </p>
+        </div>
+        <div className="mx-auto grid w-full max-w-6xl items-start gap-6">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Information</CardTitle>
+                <CardDescription>
+                  Your personal and company details
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">
                       Email
                     </p>
-                    <p>{user.email}</p>
+                    <p className="text-sm">{user.email}</p>
                   </div>
-                  <div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Role
+                    </p>
+                    <p className="text-sm capitalize">{user.role}</p>
+                  </div>
+                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">
                       Company
                     </p>
-                    <p>{tenant.name}</p>
+                    <p className="text-sm">{tenant.name}</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Subscription Status
-                    </p>
-                    <p className="capitalize">{tenant.subscriptionStatus}</p>
-                  </div>
-                  <div>
+                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">
                       Company Slug
                     </p>
-                    <p>{tenant.slug}</p>
+                    <p className="text-sm font-mono text-xs">{tenant.slug}</p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common tasks to get you started</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-2">
-                <Button variant="outline" className="justify-start">
-                  View Dashboard
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription</CardTitle>
+                <CardDescription>
+                  Your current plan and billing information
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Plan
+                    </p>
+                    <p className="text-sm font-semibold capitalize">
+                      {tenant.plan}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Status
+                    </p>
+                    <p className="text-sm">
+                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                        tenant.subscriptionStatus === 'active'
+                          ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                          : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                      }`}>
+                        {tenant.subscriptionStatus}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  Manage Subscription
                 </Button>
-                <Button variant="outline" className="justify-start">
-                  Manage Team
-                </Button>
-                <Button variant="outline" className="justify-start">
-                  Settings
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardFooter>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>
+                  Common tasks and shortcuts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Button variant="outline" className="justify-start">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <rect x="3" y="3" width="7" height="7" />
+                      <rect x="14" y="3" width="7" height="7" />
+                      <rect x="14" y="14" width="7" height="7" />
+                      <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    Dashboard
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Team Members
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>
