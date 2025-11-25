@@ -134,8 +134,9 @@ function OnboardingPage() {
               </div>
             )}
 
-            {step === 1 ? (
-              <>
+            {/* Step 1 Fields */}
+            <div className={step === 1 ? "" : "hidden"}>
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="tenantName">Company Name</Label>
                   <Input
@@ -184,9 +185,12 @@ function OnboardingPage() {
                     </p>
                   )}
                 </div>
-              </>
-            ) : (
-              <>
+              </div>
+            </div>
+
+            {/* Step 2 Fields */}
+            <div className={step === 2 ? "" : "hidden"}>
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <Input
@@ -245,8 +249,8 @@ function OnboardingPage() {
                     </p>
                   )}
                 </div>
-              </>
-            )}
+              </div>
+            </div>
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4">
