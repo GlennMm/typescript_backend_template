@@ -153,3 +153,4 @@ data/
 .marscode/
 *.swp
 *.swo
+frontend/.tanstack/
