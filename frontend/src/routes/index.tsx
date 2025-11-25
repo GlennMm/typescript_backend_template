@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAuthStore } from "@/stores/authStore";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -33,9 +33,7 @@ function Index() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            <Button onClick={() => navigate({ to: "/login" })}>
-              Sign In
-            </Button>
+            <Button onClick={() => navigate({ to: "/login" })}>Sign In</Button>
             <Button
               variant="outline"
               onClick={() => navigate({ to: "/onboarding" })}
@@ -69,9 +67,7 @@ function Index() {
           <Card>
             <CardHeader>
               <CardTitle>Welcome back, {user.name}!</CardTitle>
-              <CardDescription>
-                You're logged in as {user.role}
-              </CardDescription>
+              <CardDescription>You're logged in as {user.role}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -108,9 +104,7 @@ function Index() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Common tasks to get you started
-              </CardDescription>
+              <CardDescription>Common tasks to get you started</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-2">

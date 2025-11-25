@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { authApi } from "@/api/auth";
+import { superAdminApi } from "@/api/superAdmin";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuthStore } from "@/stores/authStore";
+import { useSuperAdminStore } from "@/stores/superAdminStore";
 
-export const Route = createFileRoute("/login")({
-  component: LoginPage,
+export const Route = createFileRoute("/admin/login")({
+  component: AdminLoginPage,
 });
 
 const loginSchema = z.object({
@@ -28,9 +28,9 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-function LoginPage() {
+function AdminLoginPage() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const setAuth = useSuperAdminStore((state) => state.setAuth);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -47,11 +47,11 @@ function LoginPage() {
     setError(null);
 
     try {
-      const response = await authApi.login(data);
+      const response = await superAdminApi.login(data.email, data.password);
 
       if (response.success) {
         setAuth(response.data);
-        navigate({ to: "/" });
+        navigate({ to: "/admin" });
       }
     } catch (err: unknown) {
       const error = err as {
@@ -70,9 +70,11 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Super Admin Login
+          </CardTitle>
           <CardDescription>
-            Enter your email and password to access your account
+            Enter your credentials to access the admin portal
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -88,7 +90,7 @@ function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="admin@example.com"
                 {...register("email")}
               />
               {errors.email && (
@@ -114,22 +116,10 @@ function LoginPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col space-y-4">
+          <CardFooter>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
-
-            <div className="text-sm text-center text-muted-foreground">
-              Don't have an account?{" "}
-              <Button
-                type="button"
-                variant="link"
-                className="p-0"
-                onClick={() => navigate({ to: "/onboarding" })}
-              >
-                Create one
-              </Button>
-            </div>
           </CardFooter>
         </form>
       </Card>

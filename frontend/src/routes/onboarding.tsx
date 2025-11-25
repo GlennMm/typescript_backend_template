@@ -1,13 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { authApi } from "@/api/auth";
-import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -16,33 +13,36 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuthStore } from "@/stores/authStore";
 
 export const Route = createFileRoute("/onboarding")({
   component: OnboardingPage,
 });
 
-const onboardingSchema = z.object({
-  // Company information
-  tenantName: z
-    .string()
-    .min(2, "Company name must be at least 2 characters"),
-  tenantSlug: z
-    .string()
-    .min(2, "Company slug must be at least 2 characters")
-    .regex(
-      /^[a-z0-9-]+$/,
-      "Slug can only contain lowercase letters, numbers, and hyphens",
-    ),
+const onboardingSchema = z
+  .object({
+    // Company information
+    tenantName: z.string().min(2, "Company name must be at least 2 characters"),
+    tenantSlug: z
+      .string()
+      .min(2, "Company slug must be at least 2 characters")
+      .regex(
+        /^[a-z0-9-]+$/,
+        "Slug can only contain lowercase letters, numbers, and hyphens",
+      ),
 
-  // User information
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+    // User information
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type OnboardingFormData = z.infer<typeof onboardingSchema>;
 
@@ -94,7 +94,9 @@ function OnboardingPage() {
         navigate({ to: "/" });
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: { message?: string } } } };
+      const error = err as {
+        response?: { data?: { error?: { message?: string } } };
+      };
       setError(
         error.response?.data?.error?.message ||
           "Registration failed. Please try again.",
@@ -274,11 +276,7 @@ function OnboardingPage() {
                   Continue
                 </Button>
               ) : (
-                <Button
-                  type="submit"
-                  className="flex-1"
-                  disabled={isLoading}
-                >
+                <Button type="submit" className="flex-1" disabled={isLoading}>
                   {isLoading ? "Creating account..." : "Create account"}
                 </Button>
               )}
