@@ -373,4 +373,33 @@ export class TenantsService {
 
     return plans;
   }
+
+  async validateTenantSlug(slug: string) {
+    const db = getMainDb();
+
+    const [tenant] = await db
+      .select({
+        id: tenants.id,
+        name: tenants.name,
+        slug: tenants.slug,
+        isActive: tenants.isActive,
+      })
+      .from(tenants)
+      .where(eq(tenants.slug, slug))
+      .limit(1);
+
+    if (!tenant) {
+      throw new Error("Tenant not found");
+    }
+
+    if (!tenant.isActive) {
+      throw new Error("Tenant is not active");
+    }
+
+    return {
+      exists: true,
+      name: tenant.name,
+      slug: tenant.slug,
+    };
+  }
 }

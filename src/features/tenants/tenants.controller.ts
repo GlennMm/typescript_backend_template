@@ -155,4 +155,18 @@ export class TenantsController {
       next(error);
     }
   };
+
+  validateTenantSlug = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { slug } = req.params;
+      const result = await this.tenantsService.validateTenantSlug(slug);
+      return successResponse(res, result);
+    } catch (error: any) {
+      next(error);
+    }
+  };
 }

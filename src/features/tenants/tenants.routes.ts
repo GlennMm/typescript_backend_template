@@ -49,6 +49,44 @@ const tenantsController = new TenantsController();
  */
 router.post("/register", tenantsController.registerTenant);
 
+/**
+ * @swagger
+ * /api/tenants/validate/{slug}:
+ *   get:
+ *     tags: [Tenants]
+ *     summary: Validate tenant slug (public)
+ *     description: Check if a tenant with the given slug exists and is active
+ *     parameters:
+ *       - name: slug
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: acme-corp
+ *     responses:
+ *       200:
+ *         description: Tenant exists and is active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     exists:
+ *                       type: boolean
+ *                     name:
+ *                       type: string
+ *                     slug:
+ *                       type: string
+ *       404:
+ *         description: Tenant not found or not active
+ */
+router.get("/validate/:slug", tenantsController.validateTenantSlug);
+
 // All other tenant management routes require SuperAdmin authentication
 router.use(authenticate, authorize("SuperAdmin"));
 

@@ -41,6 +41,9 @@ function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      tenantId: localStorage.getItem("selectedTenantSlug") || "",
+    },
   });
 
   const onSubmit = async (data: LoginFormData) => {
@@ -85,7 +88,20 @@ function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="tenantId">Tenant ID</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="tenantId">Tenant ID</Label>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="p-0 h-auto text-xs"
+                  onClick={() => {
+                    localStorage.removeItem("selectedTenantSlug");
+                    navigate({ to: "/" });
+                  }}
+                >
+                  Change tenant
+                </Button>
+              </div>
               <Input
                 id="tenantId"
                 placeholder="your-company"

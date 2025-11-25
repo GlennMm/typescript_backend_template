@@ -1,17 +1,134 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { apiClient } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/stores/authStore";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
+
+const tenantSelectionSchema = z.object({
+  tenantSlug: z
+    .string()
+    .min(1, "Tenant slug is required")
+    .regex(/^[a-z0-9-]+$/, "Tenant slug must contain only lowercase letters, numbers, and hyphens"),
+});
+
+type TenantSelectionFormData = z.infer<typeof tenantSelectionSchema>;
+
+function TenantSelectionPage() {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<TenantSelectionFormData>({
+    resolver: zodResolver(tenantSelectionSchema),
+    defaultValues: {
+      tenantSlug: localStorage.getItem("selectedTenantSlug") || "",
+    },
+  });
+
+  const onSubmit = async (data: TenantSelectionFormData) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.get(`/tenants/validate/${data.tenantSlug}`);
+
+      if (response.data.success) {
+        // Store selected tenant in localStorage
+        localStorage.setItem("selectedTenantSlug", data.tenantSlug);
+        // Redirect to login page
+        navigate({ to: "/login" });
+      }
+    } catch (err: unknown) {
+      const error = err as {
+        response?: { data?: { error?: { message?: string } } };
+      };
+      setError(
+        error.response?.data?.error?.message ||
+          "Tenant not found. Please check the tenant slug.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Welcome</CardTitle>
+          <CardDescription>
+            Enter your company slug to continue
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="tenantSlug">Company Slug</Label>
+              <Input
+                id="tenantSlug"
+                placeholder="your-company"
+                {...register("tenantSlug")}
+              />
+              {errors.tenantSlug && (
+                <p className="text-sm text-destructive">
+                  {errors.tenantSlug.message}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                This is your unique company identifier
+              </p>
+            </div>
+          </CardContent>
+
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Checking..." : "Continue"}
+            </Button>
+
+            <div className="text-sm text-center text-muted-foreground">
+              Don't have an account?{" "}
+              <Button
+                type="button"
+                variant="link"
+                className="p-0"
+                onClick={() => navigate({ to: "/onboarding" })}
+              >
+                Create one
+              </Button>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  );
+}
 
 function Index() {
   const navigate = useNavigate();
@@ -23,27 +140,7 @@ function Index() {
   };
 
   if (!isAuthenticated || !user || !tenant) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-2xl">Welcome</CardTitle>
-            <CardDescription>
-              Get started by signing in to your account or creating a new one
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            <Button onClick={() => navigate({ to: "/login" })}>Sign In</Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate({ to: "/onboarding" })}
-            >
-              Create Account
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <TenantSelectionPage />;
   }
 
   return (
