@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/stores/authStore";
 
 export const Route = createFileRoute("/")({
@@ -55,7 +54,9 @@ function TenantSelectionPage() {
       const response = await apiClient.get(`/tenants/validate/${data.tenantSlug}`);
 
       if (response.data.success) {
+        // Store selected tenant in localStorage
         localStorage.setItem("selectedTenantSlug", data.tenantSlug);
+        // Redirect to login page
         navigate({ to: "/login" });
       }
     } catch (err: unknown) {
@@ -129,134 +130,9 @@ function TenantSelectionPage() {
   );
 }
 
-// Navigation items for the sidebar
-const navItems = [
-  {
-    title: "Dashboard",
-    icon: "LayoutDashboard",
-    url: "/",
-  },
-  {
-    title: "Team",
-    icon: "Users",
-    url: "/team",
-  },
-  {
-    title: "Projects",
-    icon: "FolderKanban",
-    url: "/projects",
-  },
-  {
-    title: "Analytics",
-    icon: "BarChart3",
-    url: "/analytics",
-  },
-  {
-    title: "Settings",
-    icon: "Settings",
-    url: "/settings",
-  },
-];
-
-function DashboardSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { tenant } = useAuthStore();
-  const navigate = useNavigate();
-
-  return (
-    <>
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed lg:sticky top-0 left-0 z-50
-          h-screen w-64 bg-background border-r
-          transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-        `}
-      >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">
-                  {tenant?.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-semibold text-sm">{tenant?.name}</span>
-                <span className="text-xs text-muted-foreground capitalize">{tenant?.plan}</span>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="lg:hidden"
-              onClick={onClose}
-            >
-              ×
-            </Button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
-            {navItems.map((item) => (
-              <button
-                key={item.url}
-                onClick={() => {
-                  navigate({ to: item.url });
-                  onClose();
-                }}
-                className="flex items-center w-full px-3 py-2 text-sm rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                <span className="mr-3">{getIcon(item.icon)}</span>
-                {item.title}
-              </button>
-            ))}
-          </nav>
-
-          {/* Footer */}
-          <div className="p-4 border-t">
-            <Card className="bg-muted">
-              <CardContent className="p-4">
-                <p className="text-xs font-medium mb-2">Upgrade to Pro</p>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Unlock advanced features and analytics
-                </p>
-                <Button size="sm" className="w-full">
-                  Upgrade
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </aside>
-    </>
-  );
-}
-
-function getIcon(name: string) {
-  const icons: Record<string, string> = {
-    LayoutDashboard: "📊",
-    Users: "👥",
-    FolderKanban: "📁",
-    BarChart3: "📈",
-    Settings: "⚙️",
-  };
-  return icons[name] || "•";
-}
-
 function Index() {
   const navigate = useNavigate();
   const { user, tenant, isAuthenticated, clearAuth } = useAuthStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
     clearAuth();
@@ -268,273 +144,160 @@ function Index() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted/30">
-      {/* Sidebar */}
-      <DashboardSidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center justify-between h-full px-6">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="lg:hidden"
-                onClick={() => setSidebarOpen(true)}
-              >
-                ☰
-              </Button>
-              <div>
-                <h1 className="text-lg font-semibold">Dashboard</h1>
-                <p className="text-xs text-muted-foreground">
-                  Welcome back, {user.name}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="hidden sm:flex">
-                {user.role}
-              </Badge>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Sign Out
-              </Button>
-            </div>
+    <div className="flex min-h-screen w-full flex-col">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <div className="flex w-full items-center gap-4 md:gap-2">
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">{tenant.name}</h1>
           </div>
-        </header>
-
-        {/* Main content area */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="container py-6 space-y-6">
-            {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Revenue
-                  </CardTitle>
-                  <span className="text-2xl">💰</span>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">$45,231</div>
-                  <p className="text-xs text-muted-foreground">
-                    +20.1% from last month
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Active Users
-                  </CardTitle>
-                  <span className="text-2xl">👤</span>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">+2,350</div>
-                  <p className="text-xs text-muted-foreground">
-                    +180.1% from last month
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Projects
-                  </CardTitle>
-                  <span className="text-2xl">📁</span>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">+12</div>
-                  <p className="text-xs text-muted-foreground">
-                    +19% from last month
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Team Members
-                  </CardTitle>
-                  <span className="text-2xl">👥</span>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">+573</div>
-                  <p className="text-xs text-muted-foreground">
-                    +201 since last hour
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-              {/* Chart Card */}
-              <Card className="col-span-full lg:col-span-4">
-                <CardHeader>
-                  <CardTitle>Overview</CardTitle>
-                  <CardDescription>
-                    Monthly revenue over the last 6 months
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pl-2">
-                  <div className="h-[300px] w-full flex items-center justify-center text-muted-foreground">
-                    <div className="text-center space-y-2">
-                      <p className="text-sm">Chart visualization</p>
-                      <p className="text-xs">Install recharts to see the chart</p>
-                    </div>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            Sign Out
+          </Button>
+        </div>
+      </header>
+      <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 bg-muted/40 p-4 md:gap-8 md:p-10">
+        <div className="mx-auto grid w-full max-w-6xl gap-2">
+          <h1 className="text-3xl font-semibold">Welcome back, {user.name}!</h1>
+          <p className="text-muted-foreground">
+            Manage your account and view your activity
+          </p>
+        </div>
+        <div className="mx-auto grid w-full max-w-6xl items-start gap-6">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Information</CardTitle>
+                <CardDescription>
+                  Your personal and company details
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Email
+                    </p>
+                    <p className="text-sm">{user.email}</p>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card className="col-span-full lg:col-span-3">
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                  <CardDescription>
-                    Your team's latest updates
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      {
-                        user: "John Doe",
-                        action: "created a new project",
-                        time: "2 hours ago",
-                      },
-                      {
-                        user: "Jane Smith",
-                        action: "updated team settings",
-                        time: "4 hours ago",
-                      },
-                      {
-                        user: "Mike Johnson",
-                        action: "invited 3 new members",
-                        time: "6 hours ago",
-                      },
-                      {
-                        user: "Sarah Williams",
-                        action: "completed 5 tasks",
-                        time: "8 hours ago",
-                      },
-                    ].map((activity, i) => (
-                      <div key={i} className="flex items-start space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-medium">
-                            {activity.user.charAt(0)}
-                          </span>
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm">
-                            <span className="font-medium">{activity.user}</span>{" "}
-                            <span className="text-muted-foreground">
-                              {activity.action}
-                            </span>
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {activity.time}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Role
+                    </p>
+                    <p className="text-sm capitalize">{user.role}</p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Account Details */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Information</CardTitle>
-                  <CardDescription>
-                    Your personal and company details
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Email
-                      </p>
-                      <p className="text-sm">{user.email}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Role
-                      </p>
-                      <p className="text-sm capitalize">{user.role}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Company
-                      </p>
-                      <p className="text-sm">{tenant.name}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Company Slug
-                      </p>
-                      <p className="text-sm font-mono text-xs">{tenant.slug}</p>
-                    </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Company
+                    </p>
+                    <p className="text-sm">{tenant.name}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Company Slug
+                    </p>
+                    <p className="text-sm font-mono text-xs">{tenant.slug}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Subscription</CardTitle>
-                  <CardDescription>
-                    Your current plan and billing information
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">Current Plan</p>
-                        <p className="text-2xl font-bold capitalize">{tenant.plan}</p>
-                      </div>
-                      <Badge
-                        variant={
-                          tenant.subscriptionStatus === "active"
-                            ? "default"
-                            : "secondary"
-                        }
-                      >
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription</CardTitle>
+                <CardDescription>
+                  Your current plan and billing information
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Plan
+                    </p>
+                    <p className="text-sm font-semibold capitalize">
+                      {tenant.plan}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Status
+                    </p>
+                    <p className="text-sm">
+                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                        tenant.subscriptionStatus === 'active'
+                          ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                          : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                      }`}>
                         {tenant.subscriptionStatus}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Users</span>
-                        <span className="font-medium">1 / Unlimited</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Storage</span>
-                        <span className="font-medium">2.4 GB / 100 GB</span>
-                      </div>
-                    </div>
+                      </span>
+                    </p>
                   </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full">
-                    Manage Subscription
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  Manage Subscription
+                </Button>
+              </CardFooter>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>
+                  Common tasks and shortcuts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Button variant="outline" className="justify-start">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <rect x="3" y="3" width="7" height="7" />
+                      <rect x="14" y="3" width="7" height="7" />
+                      <rect x="14" y="14" width="7" height="7" />
+                      <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    Dashboard
                   </Button>
-                </CardFooter>
-              </Card>
-            </div>
+                  <Button variant="outline" className="justify-start">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Team Members
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
