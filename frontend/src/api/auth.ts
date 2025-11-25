@@ -9,8 +9,13 @@ import type {
 } from "./types";
 
 export const authApi = {
-  login: async (data: LoginRequest): Promise<LoginResponse> => {
-    const response = await apiClient.post<LoginResponse>("/auth/login", data);
+  login: async (data: LoginRequest & { tenantId: string }): Promise<LoginResponse> => {
+    const { tenantId, ...loginData } = data;
+    const response = await apiClient.post<LoginResponse>("/auth/login", loginData, {
+      headers: {
+        "x-tenant-id": tenantId,
+      },
+    });
     return response.data;
   },
 

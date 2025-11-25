@@ -22,6 +22,7 @@ export const Route = createFileRoute("/login")({
 });
 
 const loginSchema = z.object({
+  tenantId: z.string().min(1, "Tenant ID is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
@@ -82,6 +83,20 @@ function LoginPage() {
                 {error}
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="tenantId">Tenant ID</Label>
+              <Input
+                id="tenantId"
+                placeholder="your-company"
+                {...register("tenantId")}
+              />
+              {errors.tenantId && (
+                <p className="text-sm text-destructive">
+                  {errors.tenantId.message}
+                </p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
