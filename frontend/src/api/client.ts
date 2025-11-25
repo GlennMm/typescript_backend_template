@@ -12,7 +12,15 @@ export const apiClient = axios.create({
 // Request interceptor for adding auth token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accessToken");
+    // Check if this is an admin route request
+    const isAdminRequest = config.url?.includes("/admin") ||
+                          config.url?.includes("/tenants");
+
+    // Use appropriate token based on request type
+    const token = isAdminRequest
+      ? localStorage.getItem("superAdminAccessToken")
+      : localStorage.getItem("accessToken");
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,9 +36,20 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access (e.g., redirect to login)
-      localStorage.removeItem("accessToken");
-      window.location.href = "/login";
+      // Check if we're on an admin page
+      const isAdminPage = window.location.pathname.startsWith("/admin");
+
+      if (isAdminPage) {
+        // Clear super admin token and redirect to admin login
+        localStorage.removeItem("superAdminAccessToken");
+        localStorage.removeItem("superAdminRefreshToken");
+        window.location.href = "/admin/login";
+      } else {
+        // Clear regular token and redirect to tenant login
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   },
