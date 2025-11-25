@@ -2,8 +2,10 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getMainDb, getTenantDb } from "../../db/connection";
 import {
+  subscriptionPlans,
   superAdminRefreshTokens,
   superAdmins,
+  tenants,
 } from "../../db/schemas/main.schema";
 import { refreshTokens, users } from "../../db/schemas/tenant.schema";
 import {
@@ -125,6 +127,30 @@ export class AuthService {
         .where(eq(users.id, user.id));
     }
 
+    // Get tenant information from main database
+    const mainDb = getMainDb();
+    const [tenant] = await mainDb
+      .select({
+        id: tenants.id,
+        name: tenants.name,
+        slug: tenants.slug,
+        subscriptionStatus: tenants.subscriptionStatus,
+        subscriptionEndDate: tenants.subscriptionEndDate,
+        planName: subscriptionPlans.name,
+        createdAt: tenants.createdAt,
+      })
+      .from(tenants)
+      .leftJoin(
+        subscriptionPlans,
+        eq(tenants.subscriptionPlanId, subscriptionPlans.id),
+      )
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+
+    if (!tenant) {
+      throw new Error("Tenant not found");
+    }
+
     const tokenId = nanoid();
     const accessToken = generateAccessToken({
       userId: user.id,
@@ -157,7 +183,18 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        tenantId,
         role: user.role,
+        createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
+      },
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        plan: (tenant.planName?.toLowerCase() || "free") as "free" | "pro" | "enterprise",
+        subscriptionStatus: tenant.subscriptionStatus,
+        subscriptionExpiresAt: tenant.subscriptionEndDate?.toISOString() || null,
+        createdAt: tenant.createdAt?.toISOString() || new Date().toISOString(),
       },
       requirePasswordChange: user.requirePasswordChange,
     };
